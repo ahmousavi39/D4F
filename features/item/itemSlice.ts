@@ -39,6 +39,7 @@ export const itemSlice = createSlice({
     reducers: {
         generateItem: (state) => {
             state.isLoading = true;
+            state.isReseable = false;
             switch (state.tabName) {
                 case "DATIV":
                     state.partData = state.data["dativ"].filter((item) => (item.isTried && item.isFalse || !item.isTried));

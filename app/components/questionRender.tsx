@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, Pressable, Animated, useAnimatedValue, View } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
-import { useSelector, useDispatch } from 'react-redux';
+import { useAppDispatch, useAppSelector } from '../hook';
 import { generateOptions, selectIsOptionsLoading,selectOptions } from '../../features/options/optionsSlice';
 import { selectIsItemLoading, selectItem, generateItem, getData, updateData, setIsDisabled, selectIsDisabled } from '../../features/item/itemSlice';
 
@@ -21,12 +21,12 @@ async function wrongSound() {
 }
 
 export function QuestionRender(){
-    const dispatch = useDispatch();
-    const item = useSelector(selectItem);
-    const options = useSelector(selectOptions);
-    const isItemLoading = useSelector(selectIsItemLoading);
-    const isOptionsLoading = useSelector(selectIsOptionsLoading);
-    const isDisabled = useSelector(selectIsDisabled);
+    const dispatch = useAppDispatch();
+    const item = useAppSelector(selectItem);
+    const options = useAppSelector(selectOptions);
+    const isItemLoading = useAppSelector(selectIsItemLoading);
+    const isOptionsLoading = useAppSelector(selectIsOptionsLoading);
+    const isDisabled = useAppSelector(selectIsDisabled);
 
     const [isOption0, setIsOption0] = useState(null);
     const [isOption1, setIsOption1] = useState(null);

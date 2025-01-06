@@ -3,7 +3,6 @@ import { StyleSheet, Text, Pressable, Animated, useAnimatedValue, View } from 'r
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
 import { useAppDispatch, useAppSelector } from '../hook';
-import { generateOptions, selectIsOptionsLoading,selectOptions } from '../../features/options/optionsSlice';
 import { selectIsItemLoading, selectItem, generateItem, getData, updateData, setIsDisabled, selectIsDisabled } from '../../features/item/itemSlice';
 
 async function correctSound() {
@@ -20,18 +19,20 @@ async function wrongSound() {
     await sound.playAsync();
 }
 
-export function QuestionRender(){
+export function QuestionRender() {
     const dispatch = useAppDispatch();
     const item = useAppSelector(selectItem);
-    const options = useAppSelector(selectOptions);
+    const possibleAnswers = ['DER', 'DAS', 'DIE', 'DEN', 'DEM', 'DES'];
     const isItemLoading = useAppSelector(selectIsItemLoading);
-    const isOptionsLoading = useAppSelector(selectIsOptionsLoading);
     const isDisabled = useAppSelector(selectIsDisabled);
 
     const [isOption0, setIsOption0] = useState(null);
     const [isOption1, setIsOption1] = useState(null);
     const [isOption2, setIsOption2] = useState(null);
     const [isOption3, setIsOption3] = useState(null);
+
+    const [options, setOptions] = useState([]);
+    const [isDisabledState, setIsDisabledState] = useState(false);
 
 
     const backgroundColorRef = useAnimatedValue(0);
@@ -86,23 +87,62 @@ export function QuestionRender(){
         outputRange: ['#ffffff', '#ff0000'],
     });
 
+    const generateOptions = () => {
+        const randLosungIndex = Math.round(0 + Math.random() * ((3 - 1) - 0));
+        let optionsDraft = [];
+        setOptions([]);
+
+        for (let i = 0; i <= 3; i++) {
+            let isUnique;
+
+            if (i != randLosungIndex) {
+                let losungenIndex;
+
+                do {
+                    isUnique = true;
+                    losungenIndex = Math.round(0 + Math.random() * ((possibleAnswers.length - 1) - 0));
+                    for (let u = 0; u <= 3; u++) {
+                        if (optionsDraft[u] == possibleAnswers[losungenIndex]) {
+                            isUnique = false;
+                        }
+                    }
+                }
+                while (!isUnique);
+                optionsDraft.push(possibleAnswers[losungenIndex].toUpperCase())
+            } else {
+                optionsDraft.push(item.answer);
+            }
+        }
+        setOptions(optionsDraft)
+    }
+
+
     const generation = () => {
         dispatch(getData());
         dispatch(generateItem());
-        dispatch(generateOptions(item.answer));
+        generateOptions();
     }
 
     useEffect(() => {
         generation()
         resetResult()
-    }, []);
+    }, [item.answer]);
+
+    useEffect(() => {
+        if(!isDisabled){
+            handleRelease();
+            setIsDisabledState(false);
+            setIsOption0(null);
+            setIsOption1(null);
+            setIsOption2(null);
+            setIsOption3(null);
+        }else{
+            setIsDisabledState(true);
+        }
+    }, [isDisabled]);
 
     const resetResult = () => {
         dispatch(setIsDisabled(false));
-        setIsOption0(null);
-        setIsOption1(null);
-        setIsOption2(null);
-        setIsOption3(null);
     }
 
     const showResult = (isSolved: boolean, option: number) => {
@@ -143,7 +183,6 @@ export function QuestionRender(){
 
     const onHandle = (title: any, option: number) => {
         let isSolved = title == item.answer ? true : false;
-
         dispatch(updateData(isSolved));
 
         showResult(isSolved, option);
@@ -165,32 +204,30 @@ export function QuestionRender(){
 
     return (
         <>
-
-
-            {isItemLoading || isOptionsLoading ? <Text>Loading...</Text> : (
+            {isItemLoading || options.length < 3 ? <Text>Loading...</Text> : (
                 <SafeAreaProvider style={styles.mainClass}>
                     <Text style={styles.question}>{item.question}</Text>
                     <SafeAreaView style={styles.container}>
                         <View style={styles.smallContainer}>
-                            <Pressable disabled={isDisabled} style={styles.touch} onPress={() => onHandle(options[0], 0)}>
-                                <Animated.View style={isOption0 && isDisabled ? [styles.button, styles.greenButton, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption0 == false && isDisabled ? [styles.button, styles.errorButton, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button, styles.primaryButton]}>
+                            <Pressable disabled={isDisabledState} style={styles.touch} onPress={() => onHandle(options[0], 0)}>
+                                <Animated.View style={isOption0? [styles.button, styles.greenButton, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption0 == false? [styles.button, styles.errorButton, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button, styles.primaryButton]}>
                                     <Text style={styles.text}>{options[0]}</Text>
                                 </Animated.View>
                             </Pressable>
-                            <Pressable disabled={isDisabled} style={styles.touch} onPress={() => onHandle(options[1], 1)}>
-                                <Animated.View style={isOption1 && isDisabled ? [styles.button, styles.greenButton, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption1 == false && isDisabled ? [styles.button, styles.errorButton, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button, styles.primaryButton]}>
+                            <Pressable disabled={isDisabledState} style={styles.touch} onPress={() => onHandle(options[1], 1)}>
+                                <Animated.View style={isOption1? [styles.button, styles.greenButton, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption1 == false? [styles.button, styles.errorButton, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button, styles.primaryButton]}>
                                     <Text style={styles.text}>{options[1]}</Text>
                                 </Animated.View>
                             </Pressable>
                         </View>
                         <View style={styles.smallContainer}>
-                            <Pressable disabled={isDisabled} style={styles.touch} onPress={() => onHandle(options[2], 2)}>
-                                <Animated.View style={isOption2 && isDisabled ? [styles.button, styles.greenButton, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption2 == false && isDisabled ? [styles.button, styles.errorButton, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button, styles.primaryButton]}>
+                            <Pressable disabled={isDisabledState} style={styles.touch} onPress={() => onHandle(options[2], 2)}>
+                                <Animated.View style={isOption2? [styles.button, styles.greenButton, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption2 == false? [styles.button, styles.errorButton, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button, styles.primaryButton]}>
                                     <Text style={styles.text}>{options[2]}</Text>
                                 </Animated.View>
                             </Pressable>
-                            <Pressable disabled={isDisabled} style={styles.touch} onPress={() => onHandle(options[3], 3)}>
-                                <Animated.View style={isOption3 && isDisabled ? [styles.button, styles.greenButton, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption3 == false && isDisabled ? [styles.button, styles.errorButton, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button, styles.primaryButton]}>
+                            <Pressable disabled={isDisabledState} style={styles.touch} onPress={() => onHandle(options[3], 3)}>
+                                <Animated.View style={isOption3? [styles.button, styles.greenButton, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption3 == false? [styles.button, styles.errorButton, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button, styles.primaryButton]}>
                                     <Text style={styles.text}>{options[3]}</Text>
                                 </Animated.View>
                             </Pressable>

@@ -9,7 +9,7 @@ interface optionsState {
 
 const initialState: optionsState = {
     possibleAnswers: ['DER', 'DAS', 'DIE', 'DEN', 'DEM', 'DES'],
-        options: ['', '', '', ''],
+        options: [],
         isLoading: false
 }
 
@@ -21,8 +21,8 @@ export const optionsSlice = createSlice({
         generateOptions: (state, action: PayloadAction<string>) => {
             state.isLoading = true;
             const answer = action.payload;
-            const randLosungIndex = Math.round(0 + Math.random() * (0 - 3));
-            state.options[randLosungIndex] = answer;
+            const randLosungIndex = Math.round(0 + Math.random() * ((3 - 1) - 0));
+            state.options = [];
 
             for (let i = 0; i <= 3; i++) {
                 let isUnique;
@@ -40,7 +40,9 @@ export const optionsSlice = createSlice({
                         }
                     }
                     while (!isUnique);
-                    state.options[i] = state.possibleAnswers[losungenIndex].toUpperCase()
+                    state.options.push(state.possibleAnswers[losungenIndex].toUpperCase())
+                }else {
+                    state.options.push(answer);
                 }
             }
             state.isLoading = false;

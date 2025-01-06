@@ -12,25 +12,27 @@ type tabNameState = "DATIV" | "AKKUSATIV" | "NOMINATIV" | "GENITIV" | "RANDOM" |
 interface itemState {
     item: { id: string; question: string; answer: string; isTried: boolean; isFalse: boolean; },
     data: { "nominativ": itemObjectState[]; "genitiv": itemObjectState[]; "dativ": itemObjectState[]; "akkusativ": itemObjectState[]; },
-    partData: itemObjectState[],
-    randItemIndex: number,
+    // partData: itemObjectState[],
+    randitemIndex: number,
     isLoading: boolean,
     isSolved: boolean,
     tabName: tabNameState,
     isReseable: boolean,
-    isDisabled: boolean
+    isDisabled: boolean,
+    dataName: "DATIV" | "AKKUSATIV" | "NOMINATIV" | "GENITIV"
 }
 
 const initialState: itemState = {
-    item: { id: "", question: "Empty", answer: "Done!", isFalse: true, isTried: true },
+    item: { id: "", question: "", answer: "", isFalse: true, isTried: true },
     data: backupData,
-    partData: backupData["dativ"],
-    randItemIndex: 0,
+    // partData: backupData["dativ"],
+    randitemIndex: 0,
     isLoading: false,
     isSolved: false,
     tabName: "DATIV",
     isReseable: false,
-    isDisabled: false
+    isDisabled: false,
+    dataName: "DATIV"
 }
 
 export const itemSlice = createSlice({
@@ -40,36 +42,54 @@ export const itemSlice = createSlice({
         generateItem: (state) => {
             state.isLoading = true;
             state.isReseable = false;
+            state.isDisabled = false;
+            let partData;
+
             switch (state.tabName) {
                 case "DATIV":
-                    state.partData = state.data["dativ"].filter((item) => (item.isTried && item.isFalse || !item.isTried));
+                    partData = state.data["dativ"].filter((item) => (item.isTried && item.isFalse || !item.isTried));
                     break;
                 case "AKKUSATIV":
-                    state.partData = state.data["akkusativ"].filter((item) => (item.isTried && item.isFalse || !item.isTried));
+                    partData = state.data["akkusativ"].filter((item) => (item.isTried && item.isFalse || !item.isTried));
                     break;
                 case "NOMINATIV":
-                    state.partData = state.data["nominativ"].filter((item) => (item.isTried && item.isFalse || !item.isTried));
+                    partData = state.data["nominativ"].filter((item) => (item.isTried && item.isFalse || !item.isTried));
                     break;
                 case "GENITIV":
-                    state.partData = state.data["genitiv"].filter((item) => (item.isTried && item.isFalse || !item.isTried));
+                    partData = state.data["genitiv"].filter((item) => (item.isTried && item.isFalse || !item.isTried));
                     break;
                 case "RANDOM":
-                    state.partData = [].concat(state.data["dativ"], state.data["akkusativ"], state.data["nominativ"], state.data["genitiv"]).filter((item) => (item.isTried && item.isFalse || !item.isTried));;
+                    partData = [].concat(state.data["dativ"], state.data["akkusativ"], state.data["nominativ"], state.data["genitiv"]).filter((item) => (item.isTried && item.isFalse || !item.isTried));
                     break;
                 case "REPEAT":
-                    state.partData = [].concat(state.data["dativ"], state.data["akkusativ"], state.data["nominativ"], state.data["genitiv"]).filter((item) => (item.isTried));
+                    partData = [].concat(state.data["dativ"], state.data["akkusativ"], state.data["nominativ"], state.data["genitiv"]).filter((item) => (item.isTried));
                     break;
                 case "RETRY":
-                    state.partData = [].concat(state.data["dativ"], state.data["akkusativ"], state.data["nominativ"], state.data["genitiv"]).filter((item) => (item.isFalse));
+                    partData = [].concat(state.data["dativ"], state.data["akkusativ"], state.data["nominativ"], state.data["genitiv"]).filter((item) => (item.isFalse));
                     break;
                 default:
                     break;
             }
 
-            state.randItemIndex = Math.round(0 + Math.random() * ((state.partData.length - 1) - 0));
+            do {
+                state.randitemIndex = Math.round(0 + Math.random() * ((partData.length - 1) - 0));
+            } while (partData.length != 1 && partData[state.randitemIndex]?.id == state.item?.id && state.item != undefined);
 
-            if (state.partData.length > 0) {
-                state.item = state.partData[state.randItemIndex];
+            if (partData.length > 0) {
+                state.item = { ...partData[state.randitemIndex], answer: partData[state.randitemIndex].answer.toUpperCase() };
+
+                if (partData[state.randitemIndex].id[0] == "D") {
+                    state.dataName = "DATIV"
+                } else if (partData[state.randitemIndex].id[0] == "A") {
+                    state.dataName = "AKKUSATIV"
+                } else if (partData[state.randitemIndex].id[0] == "N") {
+                    state.dataName = "NOMINATIV"
+                } else {
+                    state.dataName = "GENITIV"
+                }
+            } else {
+                state.item = { id: "Done!", question: "Done!", answer: "~_~", isFalse: true, isTried: true };
+                alert("Done!")
             }
             state.isLoading = false;
         },
@@ -94,27 +114,34 @@ export const itemSlice = createSlice({
 
             handleData();
         },
-        updateData: (state, action : PayloadAction<boolean>) => {
+        updateData: (state, action: PayloadAction<boolean>) => {
             state.isSolved = action.payload;
-            state.isReseable = !state.isSolved
-            state.partData[state.randItemIndex].isTried = true;
-            state.isSolved ? state.partData[state.randItemIndex].isFalse = false : state.partData[state.randItemIndex].isFalse = true;
+            state.isReseable = !state.isSolved;
+            let itemIndex;
 
-            if (state.item.id[0] == "D") {
-                state.data = { ...state.data, "dativ": state.partData };
-            } else if (state.item.id[0] == "A") {
-                state.data = { ...state.data, "akkusativ": state.partData };
-            } else if (state.item.id[0] == "N") {
-                state.data = { ...state.data, "nominativ": state.partData };
-            } else if (state.item.id[0] == "G") {
-                state.data = { ...state.data, "genitiv": state.partData };
+            if (state.dataName == "DATIV") {
+                itemIndex = state.data.dativ.findIndex(item => item.id == state.item.id);
+                state.data.dativ[itemIndex].isTried = true;
+                state.isSolved ? state.data.dativ[itemIndex].isFalse = false : state.data.dativ[itemIndex].isFalse = true;
+            } else if (state.dataName == "AKKUSATIV") {
+                itemIndex = state.data.akkusativ.findIndex(item => item.id == state.item.id);
+                state.data.akkusativ[itemIndex].isTried = true;
+                state.isSolved ? state.data.akkusativ[itemIndex].isFalse = false : state.data.akkusativ[itemIndex].isFalse = true;
+            } else if (state.dataName == "NOMINATIV") {
+                itemIndex = state.data.nominativ.findIndex(item => item.id == state.item.id);
+                state.data.nominativ[itemIndex].isTried = true;
+                state.isSolved ? state.data.nominativ[itemIndex].isFalse = false : state.data.nominativ[itemIndex].isFalse = true;
+            } else if (state.dataName == "GENITIV") {
+                itemIndex = state.data.genitiv.findIndex(item => item.id == state.item.id);
+                state.data.genitiv[itemIndex].isTried = true;
+                state.isSolved ? state.data.genitiv[itemIndex].isFalse = false : state.data.genitiv[itemIndex].isFalse = true;
             }
 
             const pushData = async () => {
                 await removeItem('data');
                 await putItem('data', state.data);
             }
-            
+
             pushData();
         },
         setIsDisabled: (state, action: PayloadAction<boolean>) => {

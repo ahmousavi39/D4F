@@ -35,12 +35,12 @@ export function RightHeader() {
 
     return (
         <>
-            <Animated.View style={[styles.icon1Container, isResetable ? { opacity: 1 } : { opacity: 0 }]}>
-                <Pressable disabled={isResetable} style={styles.button} onPress={() => { dispatch(setIsDisabled(false)) }}
+            <View style={[styles.icon1Container, isResetable ? { opacity: 1 } : { opacity: 0 }]}>
+                <Pressable disabled={!isResetable} style={styles.button} onPress={() => { dispatch(setIsDisabled(false)) }}
                 >
                     <FontAwesomeIcon size={19} icon={faRotateRight} />
                 </Pressable>
-            </Animated.View>
+            </View>
             <View style={styles.icon2Container}>
                 <Pressable style={styles.button} onPress={() => {
                     dispatch(generateItem())

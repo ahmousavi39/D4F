@@ -1,11 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
 import optionsSlice from '../features/options/optionsSlice';
 import itemSlice from '../features/item/itemSlice';
+import settingsSlice from '../features/settings/settingsSlice';
 
 export const store = configureStore({
   reducer: {
     item:itemSlice,
-    options: optionsSlice
+    options: optionsSlice,
+    settings: settingsSlice
   },
 });
 

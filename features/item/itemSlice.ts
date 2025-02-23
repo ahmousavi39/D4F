@@ -1,7 +1,8 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { getAllKeys, getItem, putItem, removeItem } from '../../app/services/AsyncStorage';
 import * as backupData from '../../data.json';
 import type { RootState } from '../../app/store'
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface itemObjectState {
     id: string; question: string; answer: string; isTried: boolean; isFalse: boolean;
@@ -34,6 +35,16 @@ const initialState: itemState = {
     isDisabled: false,
     dataName: "DATIV"
 }
+
+export const loadData = createAsyncThunk('data/loadData', async () => {
+    if ((await getAllKeys()).includes("data")) {
+        const data = await getItem('data');
+        return data;
+    } else {
+        await putItem("data", backupData);
+        return backupData;
+    }
+});
 
 export const itemSlice = createSlice({
     name: 'item',
@@ -99,21 +110,6 @@ export const itemSlice = createSlice({
             state.tabName = tabName;
             state.isLoading = false;
         },
-        getData: (state) => {
-            state.isLoading = true;
-
-            const handleData = async () => {
-                const savedData = await getAllKeys();
-
-                if (!savedData.includes("data")) {
-                    await putItem('data', JSON.stringify(backupData));
-                }
-                state.data = JSON.parse(await getItem('data'));
-                state.isLoading = false;
-            }
-
-            handleData();
-        },
         updateData: (state, action: PayloadAction<boolean>) => {
             state.isSolved = action.payload;
             state.isReseable = !state.isSolved;
@@ -138,7 +134,6 @@ export const itemSlice = createSlice({
             }
 
             const pushData = async () => {
-                await removeItem('data');
                 await putItem('data', state.data);
             }
 
@@ -146,11 +141,25 @@ export const itemSlice = createSlice({
         },
         setIsDisabled: (state, action: PayloadAction<boolean>) => {
             state.isDisabled = action.payload
+        },
+        resetData: (state) => {
+            state.data = backupData;
+            const removeData = async () => {
+                await removeItem('data');
+                await putItem('data', backupData);
+            }
+
+            removeData();
         }
+    },
+    extraReducers: (builder) => {
+        builder.addCase(loadData.fulfilled, (state, action) => {
+            state.data = action.payload;
+        });
     },
 });
 
-export const { generateItem, getData, updateData, switchTab, setIsDisabled } = itemSlice.actions;
+export const { generateItem, updateData, switchTab, setIsDisabled, resetData } = itemSlice.actions;
 
 export const selectItem = (state: RootState) => state.item.item;
 export const selectIsItemLoading = (state: RootState) => state.item.isLoading;
@@ -158,5 +167,6 @@ export const selectIsSolved = (state: RootState) => state.item.isSolved;
 export const selectTabName = (state: RootState) => state.item.tabName;
 export const selectIsResetable = (state: RootState) => state.item.isReseable;
 export const selectIsDisabled = (state: RootState) => state.item.isDisabled;
+export const selectData = (state: RootState) => state.item.data;
 
 export default itemSlice.reducer;

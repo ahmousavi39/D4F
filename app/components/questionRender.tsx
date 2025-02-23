@@ -3,7 +3,10 @@ import { StyleSheet, Text, Pressable, Animated, useAnimatedValue, View } from 'r
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
 import { useAppDispatch, useAppSelector } from '../hook';
-import { selectIsItemLoading, selectItem, generateItem, getData, updateData, setIsDisabled, selectIsDisabled } from '../../features/item/itemSlice';
+import { selectIsItemLoading, selectItem, generateItem,  updateData, setIsDisabled, selectIsDisabled } from '../../features/item/itemSlice';
+import translate from 'google-translate-api-x';
+import { selectLanguage } from '../../features/settings/settingsSlice';
+import { getItem } from '../services/AsyncStorage';
 
 async function correctSound() {
     const { sound } = await Audio.Sound.createAsync(
@@ -22,9 +25,11 @@ async function wrongSound() {
 export function QuestionRender() {
     const dispatch = useAppDispatch();
     const item = useAppSelector(selectItem);
+    const question = item.question.split(" ");
     const possibleAnswers = ['DER', 'DAS', 'DIE', 'DEN', 'DEM', 'DES'];
     const isItemLoading = useAppSelector(selectIsItemLoading);
     const isDisabled = useAppSelector(selectIsDisabled);
+    const language = useAppSelector(selectLanguage);
 
     const [isOption0, setIsOption0] = useState(null);
     const [isOption1, setIsOption1] = useState(null);
@@ -33,7 +38,6 @@ export function QuestionRender() {
 
     const [options, setOptions] = useState([]);
     const [isDisabledState, setIsDisabledState] = useState(false);
-
 
     const backgroundColorRef = useAnimatedValue(0);
     const borderColorRef = useAnimatedValue(0);
@@ -68,7 +72,7 @@ export function QuestionRender() {
 
     const backgroundColorCorrect = backgroundColorRef.interpolate({
         inputRange: [0, 1],
-        outputRange: ['#2196f3', '#008000'],
+        outputRange: ['#2196f3', '#02b523'],
     });
 
     const backgroundColorFalse = backgroundColorRef.interpolate({
@@ -79,7 +83,7 @@ export function QuestionRender() {
 
     const borderColorTrue = borderColorRef.interpolate({
         inputRange: [0, 1],
-        outputRange: ['#ffffff', '#008000'],
+        outputRange: ['#ffffff', '#02b523'],
     });
 
     const borderColorFalse = borderColorRef.interpolate({
@@ -118,7 +122,7 @@ export function QuestionRender() {
 
 
     const generation = () => {
-        dispatch(getData());
+        // dispatch(getData());
         dispatch(generateItem());
         generateOptions();
     }
@@ -129,14 +133,14 @@ export function QuestionRender() {
     }, [item.answer]);
 
     useEffect(() => {
-        if(!isDisabled){
+        if (!isDisabled) {
             handleRelease();
             setIsDisabledState(false);
             setIsOption0(null);
             setIsOption1(null);
             setIsOption2(null);
             setIsOption3(null);
-        }else{
+        } else {
             setIsDisabledState(true);
         }
     }, [isDisabled]);
@@ -192,42 +196,58 @@ export function QuestionRender() {
         if (isSolved) {
             correctSound();
             setTimeout(() => {
-                handleRelease();
                 resetResult();
                 generation()
-                resetResult();
+                handleRelease();
+
             }, 2000)
         } else {
             wrongSound();
         }
     }
 
+    const tranlate = async (word: string) => {
+        if (word !== "___") {
+            const filteredWord = word.replace(/[!.?,]/g, "");
+            const res = await translate(filteredWord, { from: 'de', to: language.key }).then(res => {
+                alert(filteredWord + ": " + res.text)
+            });
+        }
+    }
+
+
     return (
         <>
             {isItemLoading || options.length < 3 ? <Text>Loading...</Text> : (
                 <SafeAreaProvider style={styles.mainClass}>
-                    <Text style={styles.question}>{item.question}</Text>
+                    <View style={styles.question}>
+                        <Text style={styles.questionText}>
+                            {question.map(word => {
+                                return <Text onPress={() => tranlate(word)} key={word}>{word} </Text>
+                            })}
+                        </Text>
+                    </View>
                     <SafeAreaView style={styles.container}>
                         <View style={styles.smallContainer}>
                             <Pressable disabled={isDisabledState} style={styles.touch} onPress={() => onHandle(options[0], 0)}>
-                                <Animated.View style={isOption0? [styles.button, styles.greenButton, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption0 == false? [styles.button, styles.errorButton, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button, styles.primaryButton]}>
+                                <Animated.View style={isOption0 ? [styles.button, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption0 == false ? [styles.button, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button]}>
                                     <Text style={styles.text}>{options[0]}</Text>
                                 </Animated.View>
                             </Pressable>
                             <Pressable disabled={isDisabledState} style={styles.touch} onPress={() => onHandle(options[1], 1)}>
-                                <Animated.View style={isOption1? [styles.button, styles.greenButton, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption1 == false? [styles.button, styles.errorButton, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button, styles.primaryButton]}>
+                                <Animated.View style={isOption1 ? [styles.button, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption1 == false ? [styles.button, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button]}>
                                     <Text style={styles.text}>{options[1]}</Text>
                                 </Animated.View>
                             </Pressable>
                         </View>
                         <View style={styles.smallContainer}>
                             <Pressable disabled={isDisabledState} style={styles.touch} onPress={() => onHandle(options[2], 2)}>
-                                <Animated.View style={isOption2? [styles.button, styles.greenButton, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption2 == false? [styles.button, styles.errorButton, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button, styles.primaryButton]}>
+                                <Animated.View style={isOption2 ? [styles.button, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption2 == false ? [styles.button, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button]}>
                                     <Text style={styles.text}>{options[2]}</Text>
                                 </Animated.View>
                             </Pressable>
                             <Pressable disabled={isDisabledState} style={styles.touch} onPress={() => onHandle(options[3], 3)}>
-                                <Animated.View style={isOption3? [styles.button, styles.greenButton, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption3 == false? [styles.button, styles.errorButton, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button, styles.primaryButton]}>
+                                <Animated.View style={isOption3 ? [styles.button, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption3 == false ? [styles.button, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button]}>
                                     <Text style={styles.text}>{options[3]}</Text>
                                 </Animated.View>
                             </Pressable>
@@ -278,7 +298,9 @@ let styles = StyleSheet.create({
         alignItems: 'center',
         padding: 10,
         margin: 5,
-        height: "100%"
+        height: "100%",
+        backgroundColor: 'rgb(33, 150, 243)',
+
     },
     text: {
         color: "white",
@@ -286,12 +308,19 @@ let styles = StyleSheet.create({
         marginBottom: "auto",
     },
     question: {
-        fontSize: 18,
-        textAlign: "center",
-        paddingTop: "7.5%",
         backgroundColor: "rgba(221, 221, 221, 0.7)",
         width: "100%",
         height: "15%",
-        marginTop: "10%"
+        marginTop: "10%",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    questionText: {
+        fontSize: 18,
+        textAlign: "center",
+
+        maxWidth: "85%",
+        marginRight: "auto",
+        marginLeft: "auto"
     }
 });

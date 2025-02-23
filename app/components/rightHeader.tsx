@@ -55,10 +55,10 @@ export function RightHeader() {
 
 let styles = StyleSheet.create({
     icon1Container: {
-      paddingRight: "10%"
+      paddingRight: 10
     },
     icon2Container: {
-      paddingLeft: "10%",
+      paddingLeft: 10,
     },
     button: {
       padding: 0,

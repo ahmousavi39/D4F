@@ -11,13 +11,13 @@ export function LeftHeader() {
 
   return (
     <>
-      <View style={styles.icon1Container}>
+      {/* <View style={styles.icon1Container}>
         <Pressable style={styles.button} onPress={() => {
           navigation.navigate("Home")
         }}>
           <FontAwesomeIcon size={19} icon={faChevronLeft} />
         </Pressable>
-      </View>
+      </View> */}
       <View style={styles.icon2Container}>
         <Pressable style={styles.button} onPress={() => {
           navigation.navigate("Info")
@@ -36,8 +36,8 @@ let styles = StyleSheet.create({
     margin: 0
   },
   icon2Container: {
-    paddingLeft: 10
-
+    paddingLeft: 10,
+    paddingRight: 0
   },
   button: {
     padding: 0,

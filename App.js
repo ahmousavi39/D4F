@@ -20,7 +20,8 @@ export default function App() {
         screen: () => <Dativ />,
         options: {
           headerRight: () => (<RightHeader />),
-          headerLeft: () => (<LeftHeader />),
+          headerLeft: () => (<><LeftHeader /></>),
+          headerBackVisible: true,
           headerTitleAlign: "center"
         }
       },
@@ -29,6 +30,7 @@ export default function App() {
         options: {
           headerRight: () => (<RightHeader />),
           headerLeft: () => (<LeftHeader />),
+          headerBackVisible: true,
           headerTitleAlign: "center"
         }
       },
@@ -37,6 +39,7 @@ export default function App() {
         options: {
           headerRight: () => (<RightHeader />),
           headerLeft: () => (<LeftHeader />),
+          headerBackVisible: true,
           headerTitleAlign: "center"
         }
       },
@@ -45,6 +48,7 @@ export default function App() {
         options: {
           headerRight: () => (<RightHeader />),
           headerLeft: () => (<LeftHeader />),
+          headerBackVisible: true,
           headerTitleAlign: "center"
         }
       },
@@ -54,6 +58,7 @@ export default function App() {
           title: 'Random Mix',
           headerRight: () => (<RightHeader />),
           headerLeft: () => (<LeftHeader />),
+          headerBackVisible: true,
           headerTitleAlign: "center"
         },
       },
@@ -63,6 +68,7 @@ export default function App() {
           title: 'Korrigieren',
           headerRight: () => (<RightHeader />),
           headerLeft: () => (<LeftHeader />),
+          headerBackVisible: true,
           headerTitleAlign: "center"
         },
       },
@@ -72,6 +78,7 @@ export default function App() {
           title: 'Widerholen',
           headerRight: () => (<RightHeader />),
           headerLeft: () => (<LeftHeader />),
+          headerBackVisible: true,
           headerTitleAlign: "center"
         }
       },

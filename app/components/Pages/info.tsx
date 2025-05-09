@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import {  useAppSelector } from '../../hook';
 import { NominativInfo } from '../Info/nominativ';
 import { AkkusativInfo } from '../Info/akkusativ';
@@ -15,7 +15,7 @@ export function Info() {
   const dataName = useAppSelector(selectDataName);
 
   return(
-    <ScrollView>
+    <ScrollView style={styles.container}>
       {navigation.getId() == "Home" ? (<><DativInfo></DativInfo>
     <AkkusativInfo></AkkusativInfo>
     <NominativInfo></NominativInfo>
@@ -23,3 +23,8 @@ export function Info() {
     </ScrollView>
   )
 }
+const styles = StyleSheet.create({
+  container: {
+    padding: 10
+  },
+});

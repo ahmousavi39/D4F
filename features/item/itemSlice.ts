@@ -57,25 +57,25 @@ export const itemSlice = createSlice({
 
             switch (state.tabName) {
                 case "DATIV":
-                    partData = state.data["dativ"].filter((item) => (item.isTried && item.isFalse || !item.isTried));
+                    partData = state.data.dativ.filter((item) => (item.isTried && item.isFalse || !item.isTried));
                     break;
                 case "AKKUSATIV":
-                    partData = state.data["akkusativ"].filter((item) => (item.isTried && item.isFalse || !item.isTried));
+                    partData = state.data.akkusativ.filter((item) => (item.isTried && item.isFalse || !item.isTried));
                     break;
                 case "NOMINATIV":
-                    partData = state.data["nominativ"].filter((item) => (item.isTried && item.isFalse || !item.isTried));
+                    partData = state.data.nominativ.filter((item) => (item.isTried && item.isFalse || !item.isTried));
                     break;
                 case "GENITIV":
-                    partData = state.data["genitiv"].filter((item) => (item.isTried && item.isFalse || !item.isTried));
+                    partData = state.data.genitiv.filter((item) => (item.isTried && item.isFalse || !item.isTried));
                     break;
                 case "RANDOM":
-                    partData = [].concat(state.data["dativ"], state.data["akkusativ"], state.data["nominativ"], state.data["genitiv"]).filter((item) => (item.isTried && item.isFalse || !item.isTried));
+                    partData = [].concat(state.data.dativ, state.data.akkusativ, state.data.nominativ, state.data.genitiv).filter((item) => (item.isTried && item.isFalse || !item.isTried));
                     break;
                 case "REPEAT":
-                    partData = [].concat(state.data["dativ"], state.data["akkusativ"], state.data["nominativ"], state.data["genitiv"]).filter((item) => (item.isTried));
+                    partData = [].concat(state.data.dativ, state.data.akkusativ, state.data.nominativ, state.data.genitiv).filter((item) => (item.isTried));
                     break;
                 case "RETRY":
-                    partData = [].concat(state.data["dativ"], state.data["akkusativ"], state.data["nominativ"], state.data["genitiv"]).filter((item) => (item.isFalse));
+                    partData = [].concat(state.data.dativ, state.data.akkusativ, state.data.nominativ, state.data.genitiv).filter((item) => (item.isFalse));
                     break;
                 default:
                     break;

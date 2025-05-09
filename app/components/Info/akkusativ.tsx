@@ -99,7 +99,8 @@ export function AkkusativInfo() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    paddingRight: 20,
+    paddingLeft: 20,
     backgroundColor: "#f0f0f0",
   },
   title: {

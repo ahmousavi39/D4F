@@ -2,7 +2,6 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { getAllKeys, getItem, putItem, removeItem } from '../../app/services/AsyncStorage';
 import * as backupData from '../../data.json';
 import type { RootState } from '../../app/store'
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface itemObjectState {
     id: string; question: string; answer: string; isTried: boolean; isFalse: boolean;
@@ -165,6 +164,7 @@ export const selectItem = (state: RootState) => state.item.item;
 export const selectIsItemLoading = (state: RootState) => state.item.isLoading;
 export const selectIsSolved = (state: RootState) => state.item.isSolved;
 export const selectTabName = (state: RootState) => state.item.tabName;
+export const selectDataName = (state: RootState) => state.item.dataName;
 export const selectIsResetable = (state: RootState) => state.item.isReseable;
 export const selectIsDisabled = (state: RootState) => state.item.isDisabled;
 export const selectData = (state: RootState) => state.item.data;

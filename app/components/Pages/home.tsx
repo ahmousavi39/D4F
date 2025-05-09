@@ -4,7 +4,6 @@ import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   useNavigation,
 } from '@react-navigation/native';
-import { RightHeaderHome } from '../rightHeaderHome';
 import { useAppDispatch, useAppSelector } from '../../hook';
 import { loadData, selectData } from '../../../features/item/itemSlice';
 import { loadLanguage } from '../../../features/settings/settingsSlice';
@@ -51,22 +50,25 @@ export function Home() {
             </View>
           </TouchableHighlight>
           <TouchableHighlight underlayColor={'transparent'} onPress={() => {
+            if(data){
             if ([].concat(data["dativ"], data["akkusativ"], data["nominativ"], data["genitiv"]).filter((item) => (item.isFalse)).length > 0) {
               navigation.navigate("Retry");
             } else {
               setModalVisibleRetry(true);
-            }
+            }}
           }}>
             <View style={styles.random}>
               <Text style={styles.text}>Korrigieren</Text>
             </View>
           </TouchableHighlight>
           <TouchableHighlight underlayColor={'transparent'} onPress={() => {
+            if(data){
             if ([].concat(data["dativ"], data["akkusativ"], data["nominativ"], data["genitiv"]).filter((item) => (item.isTried)).length > 0) {
               navigation.navigate("Repeat")
             } else {
               setModalVisibleRepeat(true);
             }
+          }
           }}>
             <View style={styles.random}>
               <Text style={styles.text}>Wiederholen</Text>
@@ -118,8 +120,6 @@ export function Home() {
               </View>
             </View>
           </Modal>
-
-          <RightHeaderHome></RightHeaderHome>
         </SafeAreaView>
       </SafeAreaProvider >
     </>

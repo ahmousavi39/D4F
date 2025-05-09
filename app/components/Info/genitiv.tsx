@@ -6,7 +6,7 @@ export function GenitivInfo() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>📖 Was ist der Dativ?</Text>
+        <Text style={styles.title}>📖 Was ist der Genitiv?</Text>
         <Text style={styles.text}>Der Genitiv wird hauptsächlich verwendet, um <Text style={styles.bold}>Besitz oder Zugehörigkeit</Text> eines Satzes auszudrücken. Er beantwortet die Fragen <Text style={styles.bold}>„Wessen?“</Text> oder <Text style={styles.bold}>„Von wem?“</Text>.</Text>
         <Text style={styles.example}>Beispiele:</Text>
        <Text style={styles.text}>{`\u2022`} Das ist das Buch <Text style={styles.bold}>des Lehrers</Text>. (<Text style={styles.bold}>Wessen</Text> Buch? → <Text style={styles.bold}>des Lehrers</Text>)</Text>

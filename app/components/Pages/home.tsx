@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Modal, StyleSheet, Text, TouchableHighlight, View } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import {
-  useNavigation,
-} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../../hook';
 import { loadData, selectData } from '../../../features/item/itemSlice';
 import { loadLanguage } from '../../../features/settings/settingsSlice';
@@ -18,63 +16,43 @@ export function Home() {
   useEffect(() => {
     dispatch(loadData());
     dispatch(loadLanguage());
-  }, [])
+  }, []);
 
   return (
     <>
       <SafeAreaProvider>
         <SafeAreaView style={modalVisibleRepeat || modalVisibleRetry ? styles.containerDisabled : styles.container}>
-          <TouchableHighlight underlayColor={'transparent'} onPress={() => navigation.navigate("Dativ")}>
-            <View style={styles.dativ}>
-              <Text style={styles.text}>Dativ (Wem?)</Text>
-            </View>
-          </TouchableHighlight>
-          <TouchableHighlight underlayColor={'transparent'} onPress={() => navigation.navigate("Akkusativ")}>
-            <View style={styles.akkusativ}>
-              <Text style={styles.text}>Akkusativ (Wen oder was?)</Text>
-            </View>
-          </TouchableHighlight>
-          <TouchableHighlight underlayColor={'transparent'} onPress={() => navigation.navigate("Nominativ")}>
-            <View style={styles.nominativ}>
-              <Text style={styles.text}>Nominativ (Wer oder was?)</Text>
-            </View>
-          </TouchableHighlight>
-          <TouchableHighlight underlayColor={'transparent'} onPress={() => navigation.navigate("Genitiv")}>
-            <View style={styles.genitiv}>
-              <Text style={styles.text}>Genitiv (Wessen?)</Text>
-            </View>
-          </TouchableHighlight>
-          <TouchableHighlight underlayColor={'transparent'} onPress={() => navigation.navigate("Random")}>
-            <View style={styles.random}>
-              <Text style={styles.text}>Random Mix</Text>
-            </View>
-          </TouchableHighlight>
-          <TouchableHighlight underlayColor={'transparent'} onPress={() => {
-            if(data){
-            if ([].concat(data["dativ"], data["akkusativ"], data["nominativ"], data["genitiv"]).filter((item) => (item.isFalse)).length > 0) {
-              navigation.navigate("Retry");
-            } else {
-              setModalVisibleRetry(true);
-            }}
-          }}>
-            <View style={styles.random}>
-              <Text style={styles.text}>Korrigieren</Text>
-            </View>
-          </TouchableHighlight>
-          <TouchableHighlight underlayColor={'transparent'} onPress={() => {
-            if(data){
-            if ([].concat(data["dativ"], data["akkusativ"], data["nominativ"], data["genitiv"]).filter((item) => (item.isTried)).length > 0) {
-              navigation.navigate("Repeat")
-            } else {
-              setModalVisibleRepeat(true);
-            }
-          }
-          }}>
-            <View style={styles.random}>
-              <Text style={styles.text}>Wiederholen</Text>
-            </View>
-          </TouchableHighlight>
-
+          <View style={styles.row}>
+            <TouchableHighlight underlayColor={'transparent'} style={styles.touchableHighlight} onPress={() => navigation.navigate("Dativ")}>
+              <View style={styles.dativ}><Text style={styles.text}>Dativ</Text><Text style={styles.text}>(Wem?)</Text></View>
+            </TouchableHighlight>
+            <TouchableHighlight underlayColor={'transparent'} style={styles.touchableHighlight} onPress={() => navigation.navigate("Akkusativ")}>
+              <View style={styles.akkusativ}><Text style={styles.text}>Akkusativ</Text><Text style={styles.text}>(Wen oder was?)</Text></View>
+            </TouchableHighlight>
+          </View>
+          <View style={styles.row}>
+            <TouchableHighlight underlayColor={'transparent'} style={styles.touchableHighlight} onPress={() => navigation.navigate("Nominativ")}>
+              <View style={styles.nominativ}><Text style={styles.text}>Nominativ</Text><Text style={styles.text}>(Wer oder was?)</Text></View>
+            </TouchableHighlight>
+            <TouchableHighlight underlayColor={'transparent'} style={styles.touchableHighlight} onPress={() => navigation.navigate("Genitiv")}>
+              <View style={styles.genitiv}><Text style={styles.text}>Genitiv</Text><Text style={styles.text}>(Wessen?)</Text></View>
+            </TouchableHighlight>
+          </View>
+          <View style={styles.row}>
+            <TouchableHighlight underlayColor={'transparent'} style={styles.touchableHighlightLarge} onPress={() => navigation.navigate("Random")}>
+              <View style={styles.random}><Text style={styles.text}>Random Mix</Text></View>
+            </TouchableHighlight>
+          </View>
+          <View style={styles.row}>
+            <TouchableHighlight underlayColor={'transparent'} style={styles.touchableHighlightLarge} onPress={() => setModalVisibleRetry(true)}>
+              <View style={styles.random}><Text style={styles.text}>Korrigieren</Text></View>
+            </TouchableHighlight>
+          </View>
+          <View style={styles.row}>
+            <TouchableHighlight underlayColor={'transparent'} style={styles.touchableHighlightLarge} onPress={() => setModalVisibleRepeat(true)}>
+              <View style={styles.random}><Text style={styles.text}>Wiederholen</Text></View>
+            </TouchableHighlight>
+          </View>
           <Modal
             animationType="slide"
             transparent={true}
@@ -121,7 +99,7 @@ export function Home() {
             </View>
           </Modal>
         </SafeAreaView>
-      </SafeAreaProvider >
+      </SafeAreaProvider>
     </>
   );
 }
@@ -136,50 +114,75 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 10,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    filter: "brightness(50%)"
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    filter: 'brightness(50%)',
   },
-  button: {
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  touchableHighlight: {
     alignItems: 'center',
     padding: 10,
     margin: 5,
+    width: '50%',
   },
-  text: {
-    color: "white"
-  },
-  countContainer: {
+  touchableHighlightLarge: {
     alignItems: 'center',
     padding: 10,
+    width: '100%',
+    height: '100%',
+  },
+  text: {
+    color: 'white',
+    textAlign: 'center',
   },
   dativ: {
     backgroundColor: '#fc4848e0',
     alignItems: 'center',
-    padding: 10,
-    margin: 5,
+    paddingTop: 55,
+    paddingBottom: 55,
+    width: '100%',
+    height: 150,
+    borderRadius: 10
   },
   akkusativ: {
     backgroundColor: '#b948fce0',
     alignItems: 'center',
-    padding: 10,
-    margin: 5,
+    paddingTop: 55,
+    paddingBottom: 55,
+    width: '100%',
+    height: 150,
+    borderRadius: 10
+
   },
   nominativ: {
     backgroundColor: '#48e15ee0',
     alignItems: 'center',
-    padding: 10,
-    margin: 5,
+    paddingTop: 55,
+    paddingBottom: 55,
+    width: '100%',
+    height: 150,
+    borderRadius: 10
+
   },
   genitiv: {
     backgroundColor: '#007AFF',
     alignItems: 'center',
-    padding: 10,
-    margin: 5,
+    paddingTop: 55,
+    paddingBottom: 55,
+    width: '100%',
+    height: 150,
+    borderRadius: 10
+
   },
   random: {
-    backgroundColor: '#ffc900e0',
+    backgroundColor: '#5D6D7E',
     alignItems: 'center',
     padding: 10,
-    margin: 5,
+    width: "100%",
+    borderRadius: 10,
+    opacity: 0.9
   },
   centeredView: {
     flex: 1,

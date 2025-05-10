@@ -14,8 +14,8 @@ export default function App() {
         options: {
           title: "D4F",
           headerRight: () => (<RightHeaderHome />)
-        },
-      },
+        }
+            },
       Dativ: {
         screen: () => <Dativ />,
         options: {

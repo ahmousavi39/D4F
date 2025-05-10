@@ -13,10 +13,9 @@ import {
 export function Info() {
   const navigation = useNavigation();
   const dataName = useAppSelector(selectDataName);
-
   return(
     <ScrollView style={styles.container}>
-      {navigation.getId() == "Home" ? (<><DativInfo></DativInfo>
+      {navigation.getState().index == 1 ? (<><DativInfo></DativInfo>
     <AkkusativInfo></AkkusativInfo>
     <NominativInfo></NominativInfo>
     <GenitivInfo></GenitivInfo></>) : dataName == "AKKUSATIV" ? <AkkusativInfo></AkkusativInfo> : dataName == "DATIV" ? <DativInfo></DativInfo> : dataName == "GENITIV" ? <GenitivInfo></GenitivInfo> : <NominativInfo></NominativInfo>}

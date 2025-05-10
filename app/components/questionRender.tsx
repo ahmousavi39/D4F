@@ -3,10 +3,13 @@ import { StyleSheet, Text, Pressable, Animated, useAnimatedValue, View } from 'r
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
 import { useAppDispatch, useAppSelector } from '../hook';
-import { selectIsItemLoading, selectItem, generateItem,  updateData, setIsDisabled, selectIsDisabled } from '../../features/item/itemSlice';
+import { selectIsItemLoading, selectItem, generateItem,  updateData, setIsDisabled, selectIsDisabled, selectIsQuestionNotLeft, setIsQuestionNotLeft } from '../../features/item/itemSlice';
 import translate from 'google-translate-api-x';
 import { selectLanguage } from '../../features/settings/settingsSlice';
-import { getItem } from '../services/AsyncStorage';
+import { Alert, Modal, TouchableHighlight } from 'react-native';
+import {
+  useNavigation
+} from '@react-navigation/native';
 
 async function correctSound() {
     const { sound } = await Audio.Sound.createAsync(
@@ -30,6 +33,7 @@ export function QuestionRender() {
     const isItemLoading = useAppSelector(selectIsItemLoading);
     const isDisabled = useAppSelector(selectIsDisabled);
     const language = useAppSelector(selectLanguage);
+    const modalVisible = useAppSelector(selectIsQuestionNotLeft);
 
     const [isOption0, setIsOption0] = useState(null);
     const [isOption1, setIsOption1] = useState(null);
@@ -38,10 +42,11 @@ export function QuestionRender() {
 
     const [options, setOptions] = useState([]);
     const [isDisabledState, setIsDisabledState] = useState(false);
-
+  
     const backgroundColorRef = useAnimatedValue(0);
     const borderColorRef = useAnimatedValue(0);
-
+  const navigation = useNavigation();
+  
     const handlePress = () => {
         Animated.timing(backgroundColorRef, {
             toValue: 1,
@@ -199,12 +204,16 @@ export function QuestionRender() {
                 resetResult();
                 generation()
                 handleRelease();
-
             }, 2000)
         } else {
             wrongSound();
         }
     }
+
+    const nothingLeft = () => {
+    dispatch(setIsQuestionNotLeft(false)); 
+    navigation.goBack();
+}
 
     const tranlate = async (word: string) => {
         if (word !== "___") {
@@ -219,7 +228,8 @@ export function QuestionRender() {
     return (
         <>
             {isItemLoading || options.length < 3 ? <Text>Loading...</Text> : (
-                <SafeAreaProvider style={styles.mainClass}>
+                <SafeAreaProvider style={modalVisible ? styles.containerDisabled : styles.mainClass}>
+                
                     <View style={styles.question}>
                         <Text style={styles.questionText}>
                             {question.map(word => {
@@ -227,7 +237,8 @@ export function QuestionRender() {
                             })}
                         </Text>
                     </View>
-                    <SafeAreaView style={styles.container}>
+                <SafeAreaView style={styles.container}>
+
                         <View style={styles.smallContainer}>
                             <Pressable disabled={isDisabledState} style={styles.touch} onPress={() => onHandle(options[0], 0)}>
                                 <Animated.View style={isOption0 ? [styles.button, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption0 == false ? [styles.button, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button]}>
@@ -252,6 +263,30 @@ export function QuestionRender() {
                                 </Animated.View>
                             </Pressable>
                         </View>
+
+
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={modalVisible}
+            onRequestClose={() => {
+              Alert.alert('Modal has been closed.');
+              dispatch(setIsQuestionNotLeft(!modalVisible));
+            }}>
+            <View style={styles.centeredView}>
+              <View style={styles.modalView}>
+                <Text style={styles.modalText}>Nichts mehr zu üben!</Text>
+                <View style={styles.buttonContainer}>
+                  <TouchableHighlight underlayColor={'transparent'} onPress={() => nothingLeft()}>
+                    <View style={styles.cancle}>
+                      <Text style={styles.cancleText}>Abbrechen</Text>
+                    </View>
+                  </TouchableHighlight>
+
+                </View>
+              </View>
+            </View>
+          </Modal>
                     </SafeAreaView>
                 </SafeAreaProvider>
             )}
@@ -322,5 +357,41 @@ let styles = StyleSheet.create({
         maxWidth: "85%",
         marginRight: "auto",
         marginLeft: "auto"
-    }
+    },
+    centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalView: {
+    margin: 15,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 15,
+    shadowColor: '#000',
+    width: "90%",
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: 'left',
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    marginLeft: "auto",
+    marginTop: 10
+  },
+  cancle: {
+    padding: 10,
+    width: "100%",
+  },
+  cancleText: {
+    color: "black",
+    opacity: 0.7
+  },
+    containerDisabled: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    filter: 'brightness(50%)',
+  }
 });

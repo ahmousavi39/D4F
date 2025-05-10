@@ -44,15 +44,29 @@ export function Home() {
             </TouchableHighlight>
           </View>
           <View style={styles.row}>
-            <TouchableHighlight underlayColor={'transparent'} style={styles.touchableHighlightLarge} onPress={() => setModalVisibleRetry(true)}>
+            <TouchableHighlight underlayColor={'transparent'} style={styles.touchableHighlightLarge} onPress={() => {
+            if ([].concat(data["dativ"], data["akkusativ"], data["nominativ"], data["genitiv"]).filter((item) => (item.isFalse)).length > 0) {
+              navigation.navigate("Retry");
+            } else {
+              setModalVisibleRetry(true);
+            }
+          }}>
               <View style={styles.random}><Text style={styles.text}>Korrigieren</Text></View>
             </TouchableHighlight>
           </View>
           <View style={styles.row}>
-            <TouchableHighlight underlayColor={'transparent'} style={styles.touchableHighlightLarge} onPress={() => setModalVisibleRepeat(true)}>
+            <TouchableHighlight underlayColor={'transparent'} style={styles.touchableHighlightLarge} onPress={() => {
+            if ([].concat(data["dativ"], data["akkusativ"], data["nominativ"], data["genitiv"]).filter((item) => (item.isTried)).length > 0) {
+              navigation.navigate("Repeat")
+            } else {
+              setModalVisibleRepeat(true);
+            }
+          }}>
               <View style={styles.random}><Text style={styles.text}>Wiederholen</Text></View>
             </TouchableHighlight>
           </View>
+
+
           <Modal
             animationType="slide"
             transparent={true}

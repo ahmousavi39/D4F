@@ -2,6 +2,9 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { getAllKeys, getItem, putItem, removeItem } from '../../app/services/AsyncStorage';
 import * as backupData from '../../data.json';
 import type { RootState } from '../../app/store'
+import {
+  useNavigation
+} from '@react-navigation/native';
 
 interface itemObjectState {
     id: string; question: string; answer: string; isTried: boolean; isFalse: boolean;
@@ -19,7 +22,8 @@ interface itemState {
     tabName: tabNameState,
     isReseable: boolean,
     isDisabled: boolean,
-    dataName: "DATIV" | "AKKUSATIV" | "NOMINATIV" | "GENITIV"
+    dataName: "DATIV" | "AKKUSATIV" | "NOMINATIV" | "GENITIV",
+    isQuestionNotLeft: boolean
 }
 
 const initialState: itemState = {
@@ -32,7 +36,8 @@ const initialState: itemState = {
     tabName: "DATIV",
     isReseable: false,
     isDisabled: false,
-    dataName: "DATIV"
+    dataName: "DATIV",
+    isQuestionNotLeft: false
 }
 
 export const loadData = createAsyncThunk('data/loadData', async () => {
@@ -99,7 +104,7 @@ export const itemSlice = createSlice({
                 }
             } else {
                 state.item = { id: "Done!", question: "Done!", answer: "~_~", isFalse: true, isTried: true };
-                alert("Done!")
+                state.isQuestionNotLeft = true;
             }
             state.isLoading = false;
         },
@@ -108,6 +113,9 @@ export const itemSlice = createSlice({
             const tabName = action.payload;
             state.tabName = tabName;
             state.isLoading = false;
+        },
+        setIsQuestionNotLeft: (state, action: PayloadAction<boolean>) => {
+            state.isQuestionNotLeft = action.payload;
         },
         updateData: (state, action: PayloadAction<boolean>) => {
             state.isSolved = action.payload;
@@ -158,7 +166,7 @@ export const itemSlice = createSlice({
     },
 });
 
-export const { generateItem, updateData, switchTab, setIsDisabled, resetData } = itemSlice.actions;
+export const { generateItem, updateData, switchTab, setIsDisabled, resetData, setIsQuestionNotLeft } = itemSlice.actions;
 
 export const selectItem = (state: RootState) => state.item.item;
 export const selectIsItemLoading = (state: RootState) => state.item.isLoading;
@@ -168,5 +176,6 @@ export const selectDataName = (state: RootState) => state.item.dataName;
 export const selectIsResetable = (state: RootState) => state.item.isReseable;
 export const selectIsDisabled = (state: RootState) => state.item.isDisabled;
 export const selectData = (state: RootState) => state.item.data;
+export const selectIsQuestionNotLeft = (state: RootState) => state.item.isQuestionNotLeft;
 
 export default itemSlice.reducer;

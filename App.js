@@ -1,105 +1,152 @@
 import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Provider } from 'react-redux';
-import { Akkusativ,Home, Dativ, Genitiv, Nominativ, Random, Repeat, Retry, RightHeaderHome, RightHeader, Info, Settings, LeftHeader } from './app/components';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { Akkusativ,Home, Dativ, Genitiv, Nominativ, Random, Repeat, Retry, RightHeaderHome, RightHeader, Info, Settings, LeftHeader, AppInitializer } from './app/components';
 import { store } from './app/store';
-import { createStaticNavigation } from '@react-navigation/native';
+import { ThemeProvider, useTheme } from './app/theme';
 
-export default function App() {
+const Stack = createNativeStackNavigator();
 
-  const MyStack = createNativeStackNavigator({
-    screens: {
-      Home: {
-        screen: () => <Home />,
-        options: {
-          title: "D4F",
-          headerRight: () => (<RightHeaderHome />)
-        }
-            },
-      Dativ: {
-        screen: () => <Dativ />,
-        options: {
-          headerRight: () => (<RightHeader />),
-          headerLeft: () => (<><LeftHeader /></>),
-          headerBackVisible: true,
-          headerTitleAlign: "center"
-        }
-      },
-      Akkusativ: {
-        screen: () => <Akkusativ />,
-        options: {
-          headerRight: () => (<RightHeader />),
-          headerLeft: () => (<LeftHeader />),
-          headerBackVisible: true,
-          headerTitleAlign: "center"
-        }
-      },
-      Genitiv: {
-        screen: () => <Genitiv />,
-        options: {
-          headerRight: () => (<RightHeader />),
-          headerLeft: () => (<LeftHeader />),
-          headerBackVisible: true,
-          headerTitleAlign: "center"
-        }
-      },
-      Nominativ: {
-        screen: () => <Nominativ />,
-        options: {
-          headerRight: () => (<RightHeader />),
-          headerLeft: () => (<LeftHeader />),
-          headerBackVisible: true,
-          headerTitleAlign: "center"
-        }
-      },
-      Random: {
-        screen: () => <Random />,
-        options: {
-          title: 'Random Mix',
-          headerRight: () => (<RightHeader />),
-          headerLeft: () => (<LeftHeader />),
-          headerBackVisible: true,
-          headerTitleAlign: "center"
-        },
-      },
-      Retry: {
-        screen: () => <Retry />,
-        options: {
-          title: 'Korrigieren',
-          headerRight: () => (<RightHeader />),
-          headerLeft: () => (<LeftHeader />),
-          headerBackVisible: true,
-          headerTitleAlign: "center"
-        },
-      },
-      Repeat: {
-        screen: () => <Repeat />,
-        options: {
-          title: 'Widerholen',
-          headerRight: () => (<RightHeader />),
-          headerLeft: () => (<LeftHeader />),
-          headerBackVisible: true,
-          headerTitleAlign: "center"
-        }
-      },
-      Info: {
-        screen: () => <Info />,
-        options: {
-          title: 'Info'
-        }
-      },
-      Settings: {
-        screen: () => <Settings />,
-        options: {
-          title: 'Einstellungen'
-        }
-      }
-    },
-  });
+function LoadingScreen({ theme }) {
+  return (
+    <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+      <ActivityIndicator size="large" color={theme.primary} />
+    </View>
+  );
+}
 
-  const Navigation = createStaticNavigation(MyStack);
+function ThemedApp() {
+  const { theme, isLoading } = useTheme();
+  const navigationRef = React.useRef();
+
+  if (isLoading) {
+    return <LoadingScreen theme={theme} />;
+  }
 
   return (
-    <Provider store={store}><Navigation /></Provider>)
+    <AppInitializer>
+      <NavigationContainer ref={navigationRef}>
+        <Stack.Navigator
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: theme.headerBackground,
+            },
+            headerTitleStyle: {
+              color: theme.headerTitle,
+            },
+            headerTintColor: theme.headerTitle,
+          }}
+        >
+          <Stack.Screen 
+            name="Home" 
+            component={Home} 
+            options={{
+              title: "Die vier Fälle",
+              headerRight: () => (<RightHeaderHome />),
+            }}
+          />
+          <Stack.Screen 
+            name="Dativ" 
+            component={Dativ} 
+            options={{
+              headerRight: () => (<RightHeader />),
+              headerBackVisible: true,
+              headerTitleAlign: "center",
+            }}
+          />
+          <Stack.Screen 
+            name="Akkusativ" 
+            component={Akkusativ} 
+            options={{
+              headerRight: () => (<RightHeader />),
+              headerBackVisible: true,
+              headerTitleAlign: "center",
+            }}
+          />
+          <Stack.Screen 
+            name="Genitiv" 
+            component={Genitiv} 
+            options={{
+              headerRight: () => (<RightHeader />),
+              headerBackVisible: true,
+              headerTitleAlign: "center",
+            }}
+          />
+          <Stack.Screen 
+            name="Nominativ" 
+            component={Nominativ} 
+            options={{
+              headerRight: () => (<RightHeader />),
+              headerBackVisible: true,
+              headerTitleAlign: "center",
+            }}
+          />
+          <Stack.Screen 
+            name="Random" 
+            component={Random} 
+            options={{
+              title: 'Random Mix',
+              headerRight: () => (<RightHeader />),
+              headerBackVisible: true,
+              headerTitleAlign: "center",
+            }}
+          />
+          <Stack.Screen 
+            name="Repeat" 
+            component={Repeat} 
+            options={{
+              title: 'Wiederholung',
+              headerRight: () => (<RightHeader />),
+              headerBackVisible: true,
+              headerTitleAlign: "center",
+            }}
+          />
+          <Stack.Screen 
+            name="Retry" 
+            component={Retry} 
+            options={{
+              title: 'Nochmals versuchen',
+              headerRight: () => (<RightHeader />),
+              headerBackVisible: true,
+              headerTitleAlign: "center",
+            }}
+          />
+          <Stack.Screen 
+            name="Info" 
+            component={Info} 
+            options={{
+              title: 'Info',
+            }}
+          />
+          <Stack.Screen 
+            name="Settings" 
+            component={Settings} 
+            options={{
+              title: 'Einstellungen',
+            }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </AppInitializer>
+  );
+}
 
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
+
+export default function App() {
+  return (
+    <Provider store={store}>
+      <ThemeProvider>
+        <ThemedApp />
+      </ThemeProvider>
+    </Provider>
+  );
 }

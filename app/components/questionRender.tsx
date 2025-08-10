@@ -1,63 +1,68 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, Pressable, Animated, useAnimatedValue, View } from 'react-native';
+import React, { useEffect, useState, useMemo } from 'react';
+import { StyleSheet, Text, Pressable, Animated, View } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
-import { useAppDispatch, useAppSelector } from '../hook';
-import { selectIsItemLoading, selectItem, generateItem,  updateData, setIsDisabled, selectIsDisabled, selectIsQuestionNotLeft, setIsQuestionNotLeft } from '../../features/item/itemSlice';
-import translate from 'google-translate-api-x';
+import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { generateItem, updateData, setIsDisabled, selectItem, selectIsItemLoading, selectIsSolved, selectTabName, selectIsDisabled, selectData, selectIsQuestionNotLeft, goToPreviousQuestion, selectHasPreviousQuestion } from '../../features/item/itemSlice';
+import { generateOptions, selectOptions, selectIsOptionsLoading } from '../../features/options/optionsSlice';
 import { selectLanguage } from '../../features/settings/settingsSlice';
-import { Alert, Modal, TouchableHighlight } from 'react-native';
-import {
-  useNavigation
-} from '@react-navigation/native';
+import { useAppDispatch, useAppSelector } from '../hook';
+import { TappableQuestion } from './TappableQuestion';
+// ...existing code...
+import { useTheme } from '../theme';
 
 async function correctSound() {
-    const { sound } = await Audio.Sound.createAsync(
-        require('../../assets/correct.mp3')
-    );
+    const { sound } = await Audio.Sound.createAsync(require('../../assets/correct.mp3'));
     await sound.playAsync();
 }
 
 async function wrongSound() {
-    const { sound } = await Audio.Sound.createAsync(
-        require('../../assets/wrong.mp3')
-    );
+    const { sound } = await Audio.Sound.createAsync(require('../../assets/wrong.mp3'));
     await sound.playAsync();
 }
 
 export function QuestionRender() {
-    const dispatch = useAppDispatch();
-    const item = useAppSelector(selectItem);
-    const question = item.question.split(" ");
-    const possibleAnswers = ['DER', 'DAS', 'DIE', 'DEN', 'DEM', 'DES'];
-    const isItemLoading = useAppSelector(selectIsItemLoading);
-    const isDisabled = useAppSelector(selectIsDisabled);
-    const language = useAppSelector(selectLanguage);
-    const modalVisible = useAppSelector(selectIsQuestionNotLeft);
-
     const [isOption0, setIsOption0] = useState(null);
     const [isOption1, setIsOption1] = useState(null);
     const [isOption2, setIsOption2] = useState(null);
     const [isOption3, setIsOption3] = useState(null);
-
-    const [options, setOptions] = useState([]);
     const [isDisabledState, setIsDisabledState] = useState(false);
-  
-    const backgroundColorRef = useAnimatedValue(0);
-    const borderColorRef = useAnimatedValue(0);
-  const navigation = useNavigation();
-  
+    const [showResetButton, setShowResetButton] = useState(false);
+    const [dynamicOptions, setDynamicOptions] = useState([]);
+    // ...existing code...
+
+    const backgroundColorRef = useState(new Animated.Value(0))[0];
+    const borderColorRef = useState(new Animated.Value(0))[0];
+    
+    const dispatch = useAppDispatch();
+    const { theme } = useTheme();
+    
+    // Redux selectors
+    const item = useAppSelector(selectItem);
+    const isItemLoading = useAppSelector(selectIsItemLoading);
+    const isSolved = useAppSelector(selectIsSolved);
+    const tabName = useAppSelector(selectTabName);
+    const isDisabled = useAppSelector(selectIsDisabled);
+    const isQuestionNotLeft = useAppSelector(selectIsQuestionNotLeft);
+    const staticOptions = useAppSelector(selectOptions);
+    const isOptionsLoading = useAppSelector(selectIsOptionsLoading);
+    const selectedLanguage = useAppSelector(selectLanguage);
+    const hasPreviousQuestion = useAppSelector(selectHasPreviousQuestion);
+
+    const styles = useMemo(() => getStyles(theme), [theme]);
+
     const handlePress = () => {
         Animated.timing(backgroundColorRef, {
             toValue: 1,
             duration: 200,
-            useNativeDriver: true,
+            useNativeDriver: false,
         }).start();
 
         Animated.timing(borderColorRef, {
             toValue: 1,
             duration: 300,
-            useNativeDriver: true,
+            useNativeDriver: false,
         }).start();
     };
 
@@ -65,77 +70,109 @@ export function QuestionRender() {
         Animated.timing(backgroundColorRef, {
             toValue: 0,
             duration: 30,
-            useNativeDriver: true,
+            useNativeDriver: false,
         }).start();
 
         Animated.timing(borderColorRef, {
             toValue: 0,
             duration: 60,
-            useNativeDriver: true,
+            useNativeDriver: false,
         }).start();
     };
 
     const backgroundColorCorrect = backgroundColorRef.interpolate({
         inputRange: [0, 1],
-        outputRange: ['#2196f3', '#02b523'],
+        outputRange: [theme.secondary, theme.true],
     });
 
     const backgroundColorFalse = backgroundColorRef.interpolate({
         inputRange: [0, 1],
-        outputRange: ['#2196f3', '#ff0000'],
+        outputRange: [theme.secondary, theme.error],
     });
-
 
     const borderColorTrue = borderColorRef.interpolate({
         inputRange: [0, 1],
-        outputRange: ['#ffffff', '#02b523'],
+        outputRange: [theme.border, theme.true],
     });
 
     const borderColorFalse = borderColorRef.interpolate({
         inputRange: [0, 1],
-        outputRange: ['#ffffff', '#ff0000'],
+        outputRange: [theme.border, theme.error],
     });
 
-    const generateOptions = () => {
-        const randLosungIndex = Math.round(0 + Math.random() * ((3 - 1) - 0));
-        let optionsDraft = [];
-        setOptions([]);
+    // Dynamic option generation function
+    const generateDynamicOptions = (correctAnswer, currentCase) => {
+        const allArticles = {
+            definite: ['der', 'die', 'das', 'den', 'dem', 'des'],
+            indefinite: ['ein', 'eine', 'einer', 'einem', 'eines'],
+            welch: ['welcher', 'welche', 'welches', 'welchen', 'welchem'],
+            dies: ['dieser', 'diese', 'dieses', 'diesen', 'diesem']
+        };
 
-        for (let i = 0; i <= 3; i++) {
-            let isUnique;
-
-            if (i != randLosungIndex) {
-                let losungenIndex;
-
-                do {
-                    isUnique = true;
-                    losungenIndex = Math.round(0 + Math.random() * ((possibleAnswers.length - 1) - 0));
-                    for (let u = 0; u <= 3; u++) {
-                        if (optionsDraft[u] == possibleAnswers[losungenIndex]) {
-                            isUnique = false;
-                        }
-                    }
-                }
-                while (!isUnique);
-                optionsDraft.push(possibleAnswers[losungenIndex].toUpperCase())
+        // Determine the type of answer
+        const correctLower = correctAnswer.toLowerCase();
+        let articlePool;
+        
+        if (correctLower === 'welch') {
+            articlePool = allArticles.welch;
+        } else if (correctLower === 'dies') {
+            articlePool = allArticles.dies;
+        } else if (correctLower === 'ein') {
+            articlePool = allArticles.indefinite;
+        } else {
+            // Handle specific forms like "welcher", "dieser", etc.
+            if (allArticles.welch.includes(correctLower)) {
+                articlePool = allArticles.welch;
+            } else if (allArticles.dies.includes(correctLower)) {
+                articlePool = allArticles.dies;
+            } else if (allArticles.indefinite.includes(correctLower)) {
+                articlePool = allArticles.indefinite;
             } else {
-                optionsDraft.push(item.answer);
+                articlePool = allArticles.definite;
             }
         }
-        setOptions(optionsDraft)
-    }
+        
+        // Convert all articles to uppercase
+        const capitalizedPool = articlePool.map(article => article.toUpperCase());
+        const capitalizedCorrect = correctAnswer.toUpperCase();
+        
+        // Create options array starting with correct answer
+        const options = [capitalizedCorrect];
+        
+        // Add 3 random incorrect options
+        const availableOptions = capitalizedPool.filter(article => 
+            article.toLowerCase() !== correctAnswer.toLowerCase()
+        );
+        
+        while (options.length < 4 && availableOptions.length > 0) {
+            const randomIndex = Math.floor(Math.random() * availableOptions.length);
+            const selectedOption = availableOptions.splice(randomIndex, 1)[0];
+            options.push(selectedOption);
+        }
+        
+        // Shuffle the options array
+        const shuffledOptions = options
+            .map((value) => ({ value, sort: Math.random() }))
+            .sort((a, b) => a.sort - b.sort)
+            .map(({ value }) => value);
+            
+        return shuffledOptions;
+    };
 
+    // ...existing code...
 
-    const generation = () => {
-        // dispatch(getData());
-        dispatch(generateItem());
-        generateOptions();
-    }
-
+    // Generate item and options when component mounts or tab changes
     useEffect(() => {
-        generation()
-        resetResult()
-    }, [item.answer]);
+        dispatch(generateItem());
+    }, [dispatch, tabName]);
+
+    // Generate dynamic options when item changes
+    useEffect(() => {
+        if (item && item.answer && item.question !== "Done!") {
+            const newOptions = generateDynamicOptions(item.answer, tabName);
+            setDynamicOptions(newOptions);
+        }
+    }, [item, tabName]);
 
     useEffect(() => {
         if (!isDisabled) {
@@ -152,246 +189,307 @@ export function QuestionRender() {
 
     const resetResult = () => {
         dispatch(setIsDisabled(false));
-    }
+        setShowResetButton(false);
+    };
 
-    const showResult = (isSolved: boolean, option: number) => {
+    const showResult = (isCorrect, option) => {
         dispatch(setIsDisabled(true));
-        if (isSolved) {
-            switch (option) {
-                case 0:
-                    setIsOption0(true);
-                    break;
-                case 1:
-                    setIsOption1(true);
-                    break;
-                case 2:
-                    setIsOption2(true);
-                    break;
-                default:
-                    setIsOption3(true);
-                    break;
-            }
-        } else {
-            switch (option) {
-                case 0:
-                    setIsOption0(false);
-                    break;
-                case 1:
-                    setIsOption1(false);
-                    break;
-                case 2:
-                    setIsOption2(false);
-                    break;
-                default:
-                    setIsOption3(false);
-                    break;
-            }
-        }
+        if (!isCorrect) setShowResetButton(true);
 
-    }
+        const setters = [setIsOption0, setIsOption1, setIsOption2, setIsOption3];
+        setters[option](isCorrect);
+    };
 
-    const onHandle = (title: any, option: number) => {
-        let isSolved = title == item.answer ? true : false;
-        dispatch(updateData(isSolved));
+    const normalize = (str) => (str || '').toString().trim().toLowerCase();
 
-        showResult(isSolved, option);
-
+    const onHandle = (selectedOption, optionIndex) => {
+        const isCorrect = normalize(selectedOption) === normalize(item.answer);
+        showResult(isCorrect, optionIndex);
         handlePress();
-
-        if (isSolved) {
+        
+        // Update the item data in Redux
+        dispatch(updateData(isCorrect));
+        
+        if (isCorrect) {
             correctSound();
             setTimeout(() => {
-                resetResult();
-                generation()
+                dispatch(generateItem());
                 handleRelease();
-            }, 2000)
+            }, 2000);
         } else {
             wrongSound();
         }
+    };
+
+    const resetWrongAnswer = () => {
+        resetResult();
+        handleRelease();
+    };
+
+    const nextQuestion = () => {
+        dispatch(generateItem());
+    };
+
+    const previousQuestion = () => {
+        dispatch(goToPreviousQuestion());
+    };
+
+    if (isItemLoading || isOptionsLoading) {
+        return (
+            <SafeAreaProvider>
+                <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+                    <View style={styles.loadingContainer}>
+                        <Text style={styles.loadingText}>Loading...</Text>
+                    </View>
+                </SafeAreaView>
+            </SafeAreaProvider>
+        );
     }
 
-    const nothingLeft = () => {
-    dispatch(setIsQuestionNotLeft(false)); 
-    navigation.goBack();
-}
+    // ...existing code...
 
-    const tranlate = async (word: string) => {
-        if (word !== "___") {
-            const filteredWord = word.replace(/[!.?,]/g, "");
-            const res = await translate(filteredWord, { from: 'de', to: language.key }).then(res => {
-                alert(filteredWord + ": " + res.text)
-            });
-        }
+    if (isQuestionNotLeft) {
+        return (
+            <SafeAreaProvider>
+                <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+                    <View style={styles.completedContainer}>
+                        <Text style={styles.completedTitle}>🎉 Gut gemacht!</Text>
+                        <Text style={styles.completedText}>Du hast alle Fragen in dieser Kategorie beantwortet!</Text>
+                        <Pressable style={styles.restartButton} onPress={nextQuestion}>
+                            <Text style={styles.restartButtonText}>Neu starten</Text>
+                        </Pressable>
+                    </View>
+                </SafeAreaView>
+            </SafeAreaProvider>
+        );
     }
-
 
     return (
-        <>
-            {isItemLoading || options.length < 3 ? <Text>Loading...</Text> : (
-                <SafeAreaProvider style={modalVisible ? styles.containerDisabled : styles.mainClass}>
-                
-                    <View style={styles.question}>
-                        <Text style={styles.questionText}>
-                            {question.map(word => {
-                                return <Text onPress={() => tranlate(word)} key={word}>{word} </Text>
-                            })}
-                        </Text>
+        <SafeAreaProvider>
+            <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+                <View style={styles.container}>
+
+                    <View style={styles.questionWrapper}>
+                        <TappableQuestion 
+                            question={item.question} 
+                            targetLanguage={selectedLanguage.key}
+                            style={styles.title}
+                        />
                     </View>
-                <SafeAreaView style={styles.container}>
 
-                        <View style={styles.smallContainer}>
-                            <Pressable disabled={isDisabledState} style={styles.touch} onPress={() => onHandle(options[0], 0)}>
-                                <Animated.View style={isOption0 ? [styles.button, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption0 == false ? [styles.button, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button]}>
-                                    <Text style={styles.text}>{options[0]}</Text>
-                                </Animated.View>
-                            </Pressable>
-                            <Pressable disabled={isDisabledState} style={styles.touch} onPress={() => onHandle(options[1], 1)}>
-                                <Animated.View style={isOption1 ? [styles.button, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption1 == false ? [styles.button, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button]}>
-                                    <Text style={styles.text}>{options[1]}</Text>
-                                </Animated.View>
-                            </Pressable>
+                    <View style={styles.optionsContainer}>
+                        <View style={styles.optionsRow}>
+                            {dynamicOptions.slice(0, 2).map((option, i) => (
+                                <Pressable 
+                                    key={i} 
+                                    disabled={isDisabledState} 
+                                    onPress={() => onHandle(option, i)} 
+                                    style={styles.optionWrapper}
+                                >
+                                    <Animated.View
+                                        style={[
+                                            styles.optionButton,
+                                            (i === 0 && isOption0 !== null) && { 
+                                                backgroundColor: isOption0 ? backgroundColorCorrect : backgroundColorFalse, 
+                                                borderColor: isOption0 ? borderColorTrue : borderColorFalse 
+                                            },
+                                            (i === 1 && isOption1 !== null) && { 
+                                                backgroundColor: isOption1 ? backgroundColorCorrect : backgroundColorFalse, 
+                                                borderColor: isOption1 ? borderColorTrue : borderColorFalse 
+                                            },
+                                        ]}
+                                    >
+                                        <Text style={styles.optionText}>{option}</Text>
+                                    </Animated.View>
+                                </Pressable>
+                            ))}
                         </View>
-                        <View style={styles.smallContainer}>
-                            <Pressable disabled={isDisabledState} style={styles.touch} onPress={() => onHandle(options[2], 2)}>
-                                <Animated.View style={isOption2 ? [styles.button, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption2 == false ? [styles.button, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button]}>
-                                    <Text style={styles.text}>{options[2]}</Text>
-                                </Animated.View>
-                            </Pressable>
-                            <Pressable disabled={isDisabledState} style={styles.touch} onPress={() => onHandle(options[3], 3)}>
-                                <Animated.View style={isOption3 ? [styles.button, { backgroundColor: backgroundColorCorrect }, { borderColor: borderColorTrue }] : isOption3 == false ? [styles.button, { backgroundColor: backgroundColorFalse }, { borderColor: borderColorFalse }] : [styles.button]}>
-                                    <Text style={styles.text}>{options[3]}</Text>
-                                </Animated.View>
-                            </Pressable>
+                        <View style={styles.optionsRow}>
+                            {dynamicOptions.slice(2, 4).map((option, i) => (
+                                <Pressable 
+                                    key={i + 2} 
+                                    disabled={isDisabledState} 
+                                    onPress={() => onHandle(option, i + 2)} 
+                                    style={styles.optionWrapper}
+                                >
+                                    <Animated.View
+                                        style={[
+                                            styles.optionButton,
+                                            (i === 0 && isOption2 !== null) && { 
+                                                backgroundColor: isOption2 ? backgroundColorCorrect : backgroundColorFalse, 
+                                                borderColor: isOption2 ? borderColorTrue : borderColorFalse 
+                                            },
+                                            (i === 1 && isOption3 !== null) && { 
+                                                backgroundColor: isOption3 ? backgroundColorCorrect : backgroundColorFalse, 
+                                                borderColor: isOption3 ? borderColorTrue : borderColorFalse 
+                                            },
+                                        ]}
+                                    >
+                                        <Text style={styles.optionText}>{option}</Text>
+                                    </Animated.View>
+                                </Pressable>
+                            ))}
                         </View>
-
-
-          <Modal
-            animationType="slide"
-            transparent={true}
-            visible={modalVisible}
-            onRequestClose={() => {
-              Alert.alert('Modal has been closed.');
-              dispatch(setIsQuestionNotLeft(!modalVisible));
-            }}>
-            <View style={styles.centeredView}>
-              <View style={styles.modalView}>
-                <Text style={styles.modalText}>Nichts mehr zu üben!</Text>
-                <View style={styles.buttonContainer}>
-                  <TouchableHighlight underlayColor={'transparent'} onPress={() => nothingLeft()}>
-                    <View style={styles.cancle}>
-                      <Text style={styles.cancleText}>Abbrechen</Text>
                     </View>
-                  </TouchableHighlight>
 
+                    <View style={styles.footer}>
+                        {showResetButton && (
+                            <Pressable style={styles.retryTextButton} onPress={resetWrongAnswer}>
+                                <MaterialIcons name="refresh" size={36} color={theme.background} />
+                            </Pressable>
+                        )}
+                        <Pressable style={styles.nextButton} onPress={nextQuestion}>
+                            <MaterialIcons name="navigate-next" size={36} color={theme.primary} />
+                        </Pressable>
+                        <Pressable 
+                            style={[styles.backButton, !hasPreviousQuestion && { opacity: 0.3 }]} 
+                            onPress={previousQuestion}
+                            disabled={!hasPreviousQuestion}
+                        >
+                            <MaterialIcons name="navigate-before" size={36} color={theme.primary} />
+                        </Pressable>
+                    </View>
                 </View>
-              </View>
-            </View>
-          </Modal>
-                    </SafeAreaView>
-                </SafeAreaProvider>
-            )}
-        </>
+
+            </SafeAreaView>
+        </SafeAreaProvider>
     );
-};
+}
 
-let styles = StyleSheet.create({
-    mainClass: {
-        backgroundColor: "white"
-    },
-    touch: {
-        width: "50%"
-    },
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        paddingHorizontal: 10,
-    },
-    smallContainer: {
-        display: "flex",
-        flexDirection: "row",
-        alignItems: "center",
-        width: "100%",
-        height: "20%",
-        padding: 5
-    },
-    title: {
-        fontSize: 32,
-    },
-    errorButton: {
-        borderWidth: 5,
-        borderColor: "#ff0000"
+function getStyles(theme) {
+    return StyleSheet.create({
+        container: {
+            flex: 1,
+            justifyContent: 'space-evenly', // distribute space evenly between question, options, and footer
+        },
 
-    },
-    greenButton: {
-        borderWidth: 5,
-        borderColor: "#008000"
-    },
-    primaryButton: {
-        backgroundColor: 'rgb(33, 150, 243)',
-    },
-    button: {
-        alignItems: 'center',
-        padding: 10,
-        margin: 5,
-        height: "100%",
-        backgroundColor: 'rgb(33, 150, 243)',
+        questionWrapper: {
+            marginBottom: 100, // add bottom margin for bigger gap
+            flex: 1, // back to original flex
+            alignItems: 'center',
+            paddingHorizontal: 10,
+            justifyContent: 'center', // center the question vertically in its space
+        },
 
-    },
-    text: {
-        color: "white",
-        marginTop: "auto",
-        marginBottom: "auto",
-    },
-    question: {
-        backgroundColor: "rgba(221, 221, 221, 0.7)",
-        width: "100%",
-        height: "15%",
-        marginTop: "10%",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    questionText: {
-        fontSize: 18,
-        textAlign: "center",
+        optionsContainer: {
+            paddingHorizontal: 20,
+            justifyContent: 'center',
+            flex: 2, // back to original flex
+        },
 
-        maxWidth: "85%",
-        marginRight: "auto",
-        marginLeft: "auto"
-    },
-    centeredView: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalView: {
-    margin: 15,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 15,
-    shadowColor: '#000',
-    width: "90%",
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  modalText: {
-    marginBottom: 15,
-    textAlign: 'left',
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    marginLeft: "auto",
-    marginTop: 10
-  },
-  cancle: {
-    padding: 10,
-    width: "100%",
-  },
-  cancleText: {
-    color: "black",
-    opacity: 0.7
-  },
-    containerDisabled: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    filter: 'brightness(50%)',
-  }
-});
+        optionsRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            marginBottom: 20,
+        },
+
+        title: {
+            fontSize: 22,
+            fontWeight: '600',
+            textAlign: 'center',
+            marginTop: 20,  // add some top margin
+            color: theme.text,
+        },
+
+        optionWrapper: {
+            width: '48%',  // slightly less than 50% to allow for spacing
+        },
+        optionButton: {
+            backgroundColor: theme.secondary,
+            borderWidth: 2,
+            borderColor: theme.secondary,
+            borderRadius: 12,
+            paddingVertical: 20,
+            paddingHorizontal: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+            aspectRatio: 1,  // make it square
+            minHeight: 80,
+        },
+        optionText: {
+            color: theme.optionText,
+            fontSize: 16,
+            fontWeight: '600',
+            textAlign: 'center',
+        },
+        actions: {
+            marginTop: 30,
+            alignItems: 'center',
+            gap: 12,
+        },
+
+        retryTextButton: {
+            alignSelf: 'center',
+            position: 'absolute',
+            backgroundColor: theme.error,
+            paddingHorizontal: 48,
+            paddingVertical: 2,
+            borderRadius: 8,
+            marginVertical: "auto",
+            marginTop: 10
+
+        },
+        nextButton: {
+            position: 'absolute',
+            right: 20,
+            backgroundColor: 'transparent',
+            marginVertical: "auto",
+            marginTop: 12
+
+        },
+        backButton: {
+            position: 'absolute',
+            left: 20,
+            backgroundColor: 'transparent',
+            marginVertical: "auto",
+            marginTop: 12
+        },
+        footer: {
+            width: "100%",
+            height: 59,
+            backgroundColor: "transparent",
+            position: "relative", // changed from absolute to relative
+            marginTop: 20, // add some top margin
+        },
+        loadingContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        loadingText: {
+            fontSize: 18,
+            color: theme.text,
+        },
+        completedContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: 40,
+        },
+        completedTitle: {
+            fontSize: 32,
+            fontWeight: '700',
+            color: theme.true,
+            marginBottom: 16,
+            textAlign: 'center',
+        },
+        completedText: {
+            fontSize: 18,
+            color: theme.text,
+            textAlign: 'center',
+            marginBottom: 32,
+            lineHeight: 24,
+        },
+        restartButton: {
+            backgroundColor: theme.secondary,
+            paddingHorizontal: 32,
+            paddingVertical: 16,
+            borderRadius: 12,
+        },
+        restartButtonText: {
+            color: theme.optionText,
+            fontSize: 18,
+            fontWeight: '600',
+        },
+    });
+}

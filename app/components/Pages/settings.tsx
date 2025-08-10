@@ -1,17 +1,63 @@
-import React, { useEffect, useState } from 'react';
-import { Pressable, View, StyleSheet, Alert, Modal } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { Pressable, View, StyleSheet, Alert, Modal, Animated, PanResponder, Easing, TouchableOpacity } from 'react-native';
 import { Text, TouchableHighlight } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { setLanguage } from '../../../features/settings/settingsSlice';
 import { loadData, resetData } from '../../../features/item/itemSlice';
 import { useAppDispatch, useAppSelector } from '../../hook';
 import { selectLanguage } from '../../../features/settings/settingsSlice';
-import { SelectList } from 'react-native-dropdown-select-list'
+import { SelectList } from 'react-native-dropdown-select-list';
+import { useTheme } from '../../theme';
+import { FontAwesome } from '@expo/vector-icons';
+import { putItem } from '../../services/AsyncStorage';
 
 export function Settings() {
   const dispatch = useAppDispatch();
   const language = useAppSelector(selectLanguage);
   const [modalVisible, setModalVisible] = useState(false);
+  const { mode, setMode, theme } = useTheme();
+  const styles = getStyles(theme);
+
+  // Theme toggle animation setup
+  const knobStartValue = useRef(0);
+  const knobX = useRef(new Animated.Value(mode === 'dark' ? 1 : 0)).current;
+  const knobWidth = 30;
+  const containerWidth = 150;
+  const maxTranslateX = containerWidth - knobWidth - 10;
+
+  const toggleTheme = (toDark: boolean) => {
+    const newMode = toDark ? 'dark' : 'light';
+    setMode(newMode);
+
+    Animated.timing(knobX, {
+      toValue: toDark ? 1 : 0,
+      duration: 250,
+      easing: Easing.out(Easing.circle),
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        knobX.stopAnimation((value) => {
+          knobStartValue.current = value;
+        });
+      },
+      onPanResponderMove: (_, gesture) => {
+        const newVal = knobStartValue.current + gesture.dx / maxTranslateX;
+        knobX.setValue(Math.max(0, Math.min(1, newVal)));
+      },
+      onPanResponderRelease: () => {
+        knobX.stopAnimation((currentValue) => {
+          const toDark = currentValue > 0.5;
+          toggleTheme(toDark);
+        });
+      },
+    })
+  ).current;
 
   const data = [
     { "key": "af", "value": "Afrikaans" },
@@ -127,6 +173,10 @@ export function Settings() {
       setModalVisible(false);
   }
 
+  const toRestartTour = async () => {
+          await putItem('hasSeenTabIcon', false);  
+        }
+
   const toSelectLanguage = async (lang) => {
     dispatch(setLanguage({key: lang}));
   }
@@ -135,16 +185,69 @@ export function Settings() {
     <>
       <SafeAreaProvider>
         <SafeAreaView style={modalVisible ? styles.containerDisabled : styles.container}>
-          <SelectList
-            setSelected={(lang) => toSelectLanguage(lang)}
-            data={data}
-            defaultOption={data.find(lang => (lang.key == language.key))}
-          />
-          <TouchableHighlight underlayColor={'transparent'} onPress={() => setModalVisible(true)}>
+          
+          <View style={styles.topRow}>
+            <View style={styles.inputContainer}>
+              <SelectList
+                setSelected={(lang) => toSelectLanguage(lang)}
+                data={data}
+                defaultOption={data.find(lang => (lang.key == language.key))}
+                boxStyles={styles.input}
+                dropdownStyles={styles.dropdown}
+                inputStyles={styles.selectionText}
+                dropdownTextStyles={styles.selectionText}
+                searchicon={<View style={styles.searchIconContainer}><FontAwesome name="search" size={16} color={theme.inputText} /></View>}
+                arrowicon={<FontAwesome name="chevron-down" size={14} color={theme.text} />}
+                closeicon={<FontAwesome name="chevron-up" size={14} color={theme.text} />}
+                search={true}
+                searchPlaceholder=""
+                placeholder="Select language"
+                save="value"
+              />
+            </View>
+            
+            <View style={styles.modeSwitchContainer}>
+              <TouchableOpacity 
+                onPress={() => toggleTheme(mode === 'light')}
+                style={styles.toggleContainer}
+              >
+                <Animated.View
+                  {...panResponder.panHandlers}
+                  style={[
+                    styles.toggleKnob,
+                    {
+                      transform: [
+                        {
+                          translateX: knobX.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [5, maxTranslateX],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  <FontAwesome
+                    name={mode === 'light' ? 'sun-o' : 'moon-o'}
+                    size={16}
+                    color={theme.background}
+                  />
+                </Animated.View>
+              </TouchableOpacity>
+            </View>
+          </View>
+          
+          <TouchableOpacity onPress={toRestartTour}>
+            <View style={styles.tourRestart}>
+              <Text style={styles.text}>App-Tour wiederholen</Text>
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity onPress={() => setModalVisible(true)}>
             <View style={styles.reset}>
               <Text style={styles.text}>Daten zurücksetzen</Text>
             </View>
-          </TouchableHighlight>
+          </TouchableOpacity>
 
           <Modal
             animationType="slide"
@@ -158,16 +261,16 @@ export function Settings() {
               <View style={styles.modalView}>
                 <Text style={styles.modalText}>Möchten Sie alle Daten löschen, einschließlich dessen, was Sie bereits richtig und falsch gemacht haben?</Text>
                 <View style={styles.buttonContainer}>
-                  <TouchableHighlight underlayColor={'transparent'} onPress={toResetData}>
+                  <TouchableOpacity onPress={toResetData}>
                     <View style={styles.resetData}>
                       <Text style={styles.text}>Daten zurücksetzen</Text>
                     </View>
-                  </TouchableHighlight>
-                  <TouchableHighlight underlayColor={'transparent'} onPress={() => setModalVisible(false)}>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setModalVisible(false)}>
                     <View style={styles.cancle}>
                       <Text style={styles.cancleText}>Abbrechen</Text>
                     </View>
-                  </TouchableHighlight>
+                  </TouchableOpacity>
 
                 </View>
               </View>
@@ -180,76 +283,150 @@ export function Settings() {
   );
 }
 
-let styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-    paddingTop: 50,
-  },
-  containerDisabled: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-    paddingTop: 50,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    filter: "brightness(50%)"
-  },
-  button: {
-    alignItems: 'center',
-    padding: 10,
-    margin: 5,
-  },
-  text: {
-    color: "white"
-  },
-  countContainer: {
-    alignItems: 'center',
-    padding: 10,
-  },
-  reset: {
-    backgroundColor: 'red',
-    alignItems: 'center',
-    padding: 10,
-    margin: 5,
-  },
-  centeredView: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalView: {
-    margin: 15,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 15,
-    shadowColor: '#000',
-    width: "90%",
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  modalText: {
-    marginBottom: 15,
-    textAlign: 'left',
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    marginLeft: "auto",
-    marginTop: 10
-  },
-  cancle: {
-    padding: 10,
-    width: "100%",
-  },
-  cancleText: {
-    color: "black",
-    opacity: 0.7
-
-  },
-  resetData: {
-    padding: 10,
-    backgroundColor: 'red',
-    width: "100%",
-    borderRadius: 5,
-  }
-});
+function getStyles(theme) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: 10,
+      paddingTop: 50,
+      backgroundColor: theme.background,
+    },
+    containerDisabled: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: 10,
+      paddingTop: 50,
+      backgroundColor: theme.disBackground,
+      filter: "brightness(50%)"
+    },
+    button: {
+      alignItems: 'center',
+      padding: 10,
+      margin: 5,
+    },
+    text: {
+      color: theme.cardText,
+    },
+    countContainer: {
+      alignItems: 'center',
+      padding: 10,
+    },
+    reset: {
+      backgroundColor: theme.error,
+      alignItems: 'center',
+      padding: 10,
+      margin: 5,
+      marginVertical: 15,
+      borderRadius: 10,
+    },
+    centeredView: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalView: {
+      margin: 15,
+      backgroundColor: theme.background,
+      borderRadius: 20,
+      padding: 15,
+      shadowColor: theme.shadow,
+      width: "90%",
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+    },
+    modalText: {
+      marginBottom: 15,
+      textAlign: 'left',
+      color: theme.text,
+    },
+    buttonContainer: {
+      flexDirection: "row",
+      marginLeft: "auto",
+      marginTop: 10
+    },
+    cancle: {
+      padding: 10,
+      width: "100%",
+    },
+    cancleText: {
+      color: theme.secondary,
+      opacity: 0.7
+    },
+    resetData: {
+      padding: 10,
+      backgroundColor: theme.error,
+      width: "100%",
+      borderRadius: 5,
+    },
+    input: {
+      height: 43,
+      borderColor: theme.inputBorder,
+      borderWidth: 0.5,
+      paddingHorizontal: 8,
+      width: '100%',
+      backgroundColor: theme.inputBackground,
+      borderRadius: 10,
+      color: theme.text,
+    },
+    topRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 5,
+    },
+    inputContainer: {
+      flex: 1,
+      marginRight: 15,
+    },
+    selectionText: {
+      color: theme.text,
+      fontSize: 14,
+    },
+    searchIconContainer: {
+      marginRight: 8,
+    },
+    searchInput: {
+      color: theme.text,
+      fontSize: 14,
+    },
+    dropdown: {
+      backgroundColor: theme.inputBackground,
+      borderColor: theme.inputBorder,
+      borderWidth: 0.5,
+      borderRadius: 10,
+    },
+    modeSwitchContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tourRestart: {
+      padding: 10,
+      backgroundColor: theme.secondary,
+      margin: 5,
+      borderRadius: 5,
+      alignItems: 'center',
+    },
+    toggleContainer: {
+      width: 146,
+      height: 40,
+      borderRadius: 25,
+      padding: 5,
+      justifyContent: 'center',
+      overflow: 'hidden',
+      backgroundColor: theme.inputBackground
+    },
+    toggleKnob: {
+      position: 'absolute',
+      width: 30,
+      height: 30,
+      borderRadius: 20,
+      backgroundColor: theme.text,
+      justifyContent: 'center',
+      alignItems: 'center',
+      top: 5,
+      left: 0,
+      zIndex: 2,
+    },
+  });
+}

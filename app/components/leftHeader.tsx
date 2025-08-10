@@ -5,9 +5,11 @@ import { faInfo, faChevronLeft } from '@fortawesome/free-solid-svg-icons'
 import {
   useNavigation,
 } from '@react-navigation/native';
+import { useTheme } from '../theme';
 
 export function LeftHeader() {
   const navigation = useNavigation();
+  const { theme } = useTheme();
 
   return (
     <>
@@ -22,7 +24,7 @@ export function LeftHeader() {
         <Pressable style={styles.button} onPress={() => {
           navigation.navigate("Info")
         }}>
-          <FontAwesomeIcon size={19} icon={faInfo} />
+          <FontAwesomeIcon size={19} icon={faInfo} color={theme.headerTitle} />
         </Pressable>
       </View>
     </>

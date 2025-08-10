@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../../hook';
 import { loadData, selectData } from '../../../features/item/itemSlice';
 import { loadLanguage } from '../../../features/settings/settingsSlice';
+import { useTheme } from '../../theme';
 
 export function Home() {
   const navigation = useNavigation();
@@ -12,6 +13,8 @@ export function Home() {
   const data = useAppSelector(selectData);
   const [modalVisibleRepeat, setModalVisibleRepeat] = useState(false);
   const [modalVisibleRetry, setModalVisibleRetry] = useState(false);
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   useEffect(() => {
     dispatch(loadData());
@@ -118,116 +121,117 @@ export function Home() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-  },
-  containerDisabled: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    filter: 'brightness(50%)',
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  touchableHighlight: {
-    alignItems: 'center',
-    padding: 10,
-    margin: 5,
-    width: '50%',
-  },
-  touchableHighlightLarge: {
-    alignItems: 'center',
-    padding: 10,
-    width: '100%',
-    height: '100%',
-  },
-  text: {
-    color: 'white',
-    textAlign: 'center',
-  },
-  dativ: {
-    backgroundColor: '#fc4848e0',
-    alignItems: 'center',
-    paddingTop: 55,
-    paddingBottom: 55,
-    width: '100%',
-    height: 150,
-    borderRadius: 10
-  },
-  akkusativ: {
-    backgroundColor: '#b948fce0',
-    alignItems: 'center',
-    paddingTop: 55,
-    paddingBottom: 55,
-    width: '100%',
-    height: 150,
-    borderRadius: 10
-
-  },
-  nominativ: {
-    backgroundColor: '#48e15ee0',
-    alignItems: 'center',
-    paddingTop: 55,
-    paddingBottom: 55,
-    width: '100%',
-    height: 150,
-    borderRadius: 10
-
-  },
-  genitiv: {
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
-    paddingTop: 55,
-    paddingBottom: 55,
-    width: '100%',
-    height: 150,
-    borderRadius: 10
-
-  },
-  random: {
-    backgroundColor: '#5D6D7E',
-    alignItems: 'center',
-    padding: 10,
-    width: "100%",
-    borderRadius: 10,
-    opacity: 0.9
-  },
-  centeredView: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalView: {
-    margin: 15,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 15,
-    shadowColor: '#000',
-    width: "90%",
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  modalText: {
-    marginBottom: 15,
-    textAlign: 'left',
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    marginLeft: "auto",
-    marginTop: 10
-  },
-  cancle: {
-    padding: 10,
-    width: "100%",
-  },
-  cancleText: {
-    color: "black",
-    opacity: 0.7
-  },
-});
+function getStyles(theme) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: 10,
+      backgroundColor: theme.background,
+    },
+    containerDisabled: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: 10,
+      backgroundColor: theme.disBackground,
+      filter: 'brightness(50%)',
+    },
+    row: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+    },
+    touchableHighlight: {
+      alignItems: 'center',
+      padding: 10,
+      margin: 5,
+      width: '50%',
+    },
+    touchableHighlightLarge: {
+      alignItems: 'center',
+      padding: 10,
+      width: '100%',
+      height: '100%',
+    },
+    text: {
+      color: theme.cardText,
+      textAlign: 'center',
+    },
+    dativ: {
+      backgroundColor: theme.dativ,
+      alignItems: 'center',
+      paddingTop: 55,
+      paddingBottom: 55,
+      width: '100%',
+      height: 150,
+      borderRadius: 10
+    },
+    akkusativ: {
+      backgroundColor: theme.akkusativ,
+      alignItems: 'center',
+      paddingTop: 55,
+      paddingBottom: 55,
+      width: '100%',
+      height: 150,
+      borderRadius: 10
+    },
+    nominativ: {
+      backgroundColor: theme.nominativ,
+      alignItems: 'center',
+      paddingTop: 55,
+      paddingBottom: 55,
+      width: '100%',
+      height: 150,
+      borderRadius: 10
+    },
+    genitiv: {
+      backgroundColor: theme.genitiv,
+      alignItems: 'center',
+      paddingTop: 55,
+      paddingBottom: 55,
+      width: '100%',
+      height: 150,
+      borderRadius: 10
+    },
+    random: {
+      backgroundColor: theme.random,
+      alignItems: 'center',
+      padding: 10,
+      width: "100%",
+      borderRadius: 10,
+      opacity: 0.9
+    },
+    centeredView: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalView: {
+      margin: 15,
+      backgroundColor: theme.background,
+      borderRadius: 20,
+      padding: 15,
+      shadowColor: theme.shadow,
+      width: "90%",
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+    },
+    modalText: {
+      marginBottom: 15,
+      textAlign: 'left',
+      color: theme.text,
+    },
+    buttonContainer: {
+      flexDirection: "row",
+      marginLeft: "auto",
+      marginTop: 10
+    },
+    cancle: {
+      padding: 10,
+      width: "100%",
+    },
+    cancleText: {
+      color: theme.secondary,
+      opacity: 0.7
+    },
+  });
+}

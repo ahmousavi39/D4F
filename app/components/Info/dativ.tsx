@@ -1,8 +1,12 @@
 import React from 'react';
 import { Text, View, StyleSheet, SafeAreaView } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useTheme } from '../../theme';
 
 export function DativInfo() {
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+  
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
@@ -104,59 +108,61 @@ export function DativInfo() {
     </SafeAreaProvider>);
 };
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: "#f0f0f0",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginTop: 20,
-    color: "#333",
-  },
-  text: {
-    fontSize: 16,
-    marginTop: 5,
-    color: "#555",
-  },
-  bold: {
-    fontWeight: "bold",
-  },
-  example: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginTop: 10,
-    color: "#fc4848e0",
-  },
-  table: {
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    overflow: "hidden",
-  },
-  rowHeader: {
-    flexDirection: "row",
-    backgroundColor: "#fc4848e0",
-    padding: 10,
-  },
-  row: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    padding: 10,
-    borderBottomWidth: 1,
-    borderColor: "#ddd",
-  },
-  cellHeader: {
-    flex: 1,
-    fontWeight: "bold",
-    color: "#fff",
-    textAlign: "center",
-  },
-  cell: {
-    flex: 1,
-    textAlign: "center",
-    color: "#333",
-  },
-});
+function getStyles(theme) {
+  return StyleSheet.create({
+    container: {
+      padding: 20,
+      backgroundColor: theme.background,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: "bold",
+      marginTop: 20,
+      color: theme.text,
+    },
+    text: {
+      fontSize: 16,
+      marginTop: 5,
+      color: theme.text,
+    },
+    bold: {
+      fontWeight: "bold",
+    },
+    example: {
+      fontSize: 18,
+      fontWeight: "bold",
+      marginTop: 10,
+      color: theme.dativ,
+    },
+    table: {
+      marginTop: 20,
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 10,
+      overflow: "hidden",
+    },
+    rowHeader: {
+      flexDirection: "row",
+      backgroundColor: theme.dativ,
+      padding: 10,
+    },
+    row: {
+      flexDirection: "row",
+      backgroundColor: theme.surface,
+      padding: 10,
+      borderBottomWidth: 1,
+      borderColor: theme.border,
+    },
+    cellHeader: {
+      flex: 1,
+      fontWeight: "bold",
+      color: theme.onPrimary,
+      textAlign: "center",
+    },
+    cell: {
+      flex: 1,
+      textAlign: "center",
+      color: theme.text,
+    },
+  });
+}

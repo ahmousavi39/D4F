@@ -23,7 +23,9 @@ interface itemState {
     isReseable: boolean,
     isDisabled: boolean,
     dataName: "DATIV" | "AKKUSATIV" | "NOMINATIV" | "GENITIV",
-    isQuestionNotLeft: boolean
+    isQuestionNotLeft: boolean,
+    questionHistory: itemObjectState[],
+    currentQuestionIndex: number
 }
 
 const initialState: itemState = {
@@ -37,7 +39,9 @@ const initialState: itemState = {
     isReseable: false,
     isDisabled: false,
     dataName: "DATIV",
-    isQuestionNotLeft: false
+    isQuestionNotLeft: false,
+    questionHistory: [],
+    currentQuestionIndex: -1
 }
 
 export const loadData = createAsyncThunk('data/loadData', async () => {
@@ -91,7 +95,22 @@ export const itemSlice = createSlice({
             } while (partData.length != 1 && partData[state.randitemIndex]?.id == state.item?.id && state.item != undefined);
 
             if (partData.length > 0) {
-                state.item = { ...partData[state.randitemIndex], answer: partData[state.randitemIndex].answer.toUpperCase() };
+                const newItem = { ...partData[state.randitemIndex], answer: partData[state.randitemIndex].answer.toUpperCase() };
+                
+                // Add current item to history before changing to new item
+                if (state.item.id !== "" && state.item.id !== "Done!") {
+                    // Remove item if it already exists in history to avoid duplicates
+                    state.questionHistory = state.questionHistory.filter(historyItem => historyItem.id !== state.item.id);
+                    // Add to end of history
+                    state.questionHistory.push(state.item);
+                    // Keep only last 10 questions in history
+                    if (state.questionHistory.length > 10) {
+                        state.questionHistory = state.questionHistory.slice(-10);
+                    }
+                }
+                
+                state.item = newItem;
+                state.currentQuestionIndex = state.questionHistory.length;
 
                 if (partData[state.randitemIndex].id[0] == "D") {
                     state.dataName = "DATIV"
@@ -107,6 +126,33 @@ export const itemSlice = createSlice({
                 state.isQuestionNotLeft = true;
             }
             state.isLoading = false;
+        },
+        goToPreviousQuestion: (state) => {
+            if (state.questionHistory.length > 0) {
+                // Get the last question from history
+                const previousQuestion = state.questionHistory[state.questionHistory.length - 1];
+                
+                // Remove it from history
+                state.questionHistory = state.questionHistory.slice(0, -1);
+                
+                // Set it as current item
+                state.item = previousQuestion;
+                state.currentQuestionIndex = state.questionHistory.length;
+                
+                // Update dataName based on question ID
+                if (previousQuestion.id[0] == "D") {
+                    state.dataName = "DATIV"
+                } else if (previousQuestion.id[0] == "A") {
+                    state.dataName = "AKKUSATIV"
+                } else if (previousQuestion.id[0] == "N") {
+                    state.dataName = "NOMINATIV"
+                } else {
+                    state.dataName = "GENITIV"
+                }
+                
+                state.isReseable = false;
+                state.isDisabled = false;
+            }
         },
         switchTab: (state, action: PayloadAction<tabNameState>) => {
             state.isLoading = true;
@@ -166,7 +212,7 @@ export const itemSlice = createSlice({
     },
 });
 
-export const { generateItem, updateData, switchTab, setIsDisabled, resetData, setIsQuestionNotLeft } = itemSlice.actions;
+export const { generateItem, goToPreviousQuestion, updateData, switchTab, setIsDisabled, resetData, setIsQuestionNotLeft } = itemSlice.actions;
 
 export const selectItem = (state: RootState) => state.item.item;
 export const selectIsItemLoading = (state: RootState) => state.item.isLoading;
@@ -177,5 +223,6 @@ export const selectIsResetable = (state: RootState) => state.item.isReseable;
 export const selectIsDisabled = (state: RootState) => state.item.isDisabled;
 export const selectData = (state: RootState) => state.item.data;
 export const selectIsQuestionNotLeft = (state: RootState) => state.item.isQuestionNotLeft;
+export const selectHasPreviousQuestion = (state: RootState) => state.item.questionHistory.length > 0;
 
 export default itemSlice.reducer;

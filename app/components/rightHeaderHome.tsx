@@ -5,9 +5,11 @@ import { faInfo, faGears } from '@fortawesome/free-solid-svg-icons'
 import {
   useNavigation,
 } from '@react-navigation/native';
+import { useTheme } from '../theme';
 
 export function RightHeaderHome() {
   const navigation = useNavigation();
+  const { theme } = useTheme();
 
   return (
     <>
@@ -15,14 +17,14 @@ export function RightHeaderHome() {
         <Pressable style={styles.button} onPress={() => {
           navigation.navigate("Settings")
         }}>
-          <FontAwesomeIcon size={19} icon={faGears} />
+          <FontAwesomeIcon size={19} icon={faGears} color={theme.headerTitle} />
         </Pressable>
       </View>
       <View style={styles.icon2Container}>
         <Pressable style={styles.button} onPress={() => {
           navigation.navigate("Info")
         }}>
-          <FontAwesomeIcon size={19} icon={faInfo} />
+          <FontAwesomeIcon size={19} icon={faInfo} color={theme.headerTitle} />
         </Pressable>
       </View>
     </>

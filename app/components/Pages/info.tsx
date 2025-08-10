@@ -9,10 +9,14 @@ import { selectDataName } from '../../../features/item/itemSlice';
 import {
   useNavigation,
 } from '@react-navigation/native';
+import { useTheme } from '../../theme';
 
 export function Info() {
   const navigation = useNavigation();
   const dataName = useAppSelector(selectDataName);
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+  
   return(
     <ScrollView style={styles.container}>
       {navigation.getState().index == 1 ? (<><DativInfo></DativInfo>
@@ -22,8 +26,12 @@ export function Info() {
     </ScrollView>
   )
 }
-const styles = StyleSheet.create({
-  container: {
-    padding: 10
-  },
-});
+
+function getStyles(theme) {
+  return StyleSheet.create({
+    container: {
+      padding: 10,
+      backgroundColor: theme.background,
+    },
+  });
+}

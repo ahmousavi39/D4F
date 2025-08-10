@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Svg, { Rect, Mask, Circle } from 'react-native-svg';
-// ...existing code...
 import { findNodeHandle } from 'react-native';
 import { Animated } from 'react-native';
+import { Animated as RNAnimated } from 'react-native'; // <-- Add this line
 import { Text, Modal, TouchableOpacity, StyleSheet, Dimensions, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TranslationService } from '../services/TranslationService';
@@ -14,19 +14,25 @@ interface TappableQuestionProps {
   style?: any;
 }
 
-export const TappableQuestion: React.FC<TappableQuestionProps> = ({ 
-  question, 
-  targetLanguage, 
+export const TappableQuestion: React.FC<TappableQuestionProps> = ({
+  question,
+  targetLanguage,
   style
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedWord, setSelectedWord] = useState('');
   const [translation, setTranslation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [modalPos, setModalPos] = useState<{left: number, top: number, triangleLeft: number}>({left: 0, top: 0, triangleLeft: 0});
+  const [modalPos, setModalPos] = useState<{ left: number, top: number, triangleLeft: number }>({ left: 0, top: 0, triangleLeft: 0 });
   const [showTabIcon, setShowTabIcon] = useState(false);
+  const [spotlightVisible, setSpotlightVisible] = useState(true);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
+  const spotlightOpacity = useRef(new RNAnimated.Value(1)).current;
+
+  // For spotlight covering the whole question
+  const [questionLayout, setQuestionLayout] = useState<{ x: number, y: number, width: number, height: number } | null>(null);
+  const questionRef = useRef<View | null>(null);
 
   useEffect(() => {
     if (showTabIcon) {
@@ -53,19 +59,24 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
       );
       fullSequence.start();
     }
-  }, [showTabIcon]);
-  const wordRefs = useRef<{[key: number]: View | null}>({});
-  const [lastWordLayout, setLastWordLayout] = useState<{x: number, y: number, width: number, height: number} | null>(null);
-  
+  }, [showTabIcon, pulseAnim, opacityAnim]);
+
+  const wordRefs = useRef<{ [key: number]: View | null }>({});
+  const [lastWordLayout, setLastWordLayout] = useState<{ x: number, y: number, width: number, height: number } | null>(null);
+
   const screenDimensions = Dimensions.get('window');
   const modalWidth = 160;
   const modalHeight = 100;
   const padding = 16;
 
+  // Add a state to track if the user has ever seen the tab icon
+  const [hasSeenTabIcon, setHasSeenTabIcon] = useState<boolean | null>(null);
+
   // Check if this is the first time ever
   useEffect(() => {
     (async () => {
       const seen = await getItem('hasSeenTabIcon');
+      setHasSeenTabIcon(!!seen);
       if (!seen) setShowTabIcon(true);
     })();
   }, []);
@@ -77,7 +88,7 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
 
     // Calculate word center for triangle positioning
     const wordCenterX = wordX + (wordWidth / 2);
-    
+
     // Adjust horizontal position to stay within screen bounds
     if (left + modalWidth > screenDimensions.width - padding) {
       left = screenDimensions.width - modalWidth - padding;
@@ -98,12 +109,11 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
 
     // Calculate triangle position relative to modal left edge
     const triangleLeft = wordCenterX - left - 8; // 8 is half of triangle width (16px)
-    
+
     // Clamp triangle position to stay within modal bounds
     const clampedTriangleLeft = Math.max(8, Math.min(triangleLeft, modalWidth - 16));
 
     const position = { left, top, triangleLeft: clampedTriangleLeft };
-    console.log('Calculated position:', position, 'for word at:', { wordX, wordY, wordWidth, wordHeight }); // Debug log
     return position;
   };
 
@@ -159,30 +169,76 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
     if (showTabIcon && lastWordIdx !== -1 && wordRefs.current[lastWordIdx]) {
       setTimeout(() => {
         wordRefs.current[lastWordIdx]?.measureInWindow((x, y, width, height) => {
-          // Use the exact position for the spotlight
           setLastWordLayout({ x, y, width, height });
         });
       }, 100); // Wait for layout
     }
   }, [showTabIcon, lastWordIdx, question]);
 
+  // Measure question container for spotlight
+  useEffect(() => {
+    if (showTabIcon && questionRef.current) {
+      setTimeout(() => {
+        questionRef.current?.measureInWindow((x, y, width, height) => {
+          setQuestionLayout({ x, y, width, height });
+        });
+      }, 100);
+    }
+  }, [showTabIcon, question]);
+
+  // Fade out spotlight when showTabIcon becomes false
+  useEffect(() => {
+    if (hasSeenTabIcon === false) { // Only animate if first time
+      if (!showTabIcon && spotlightVisible) {
+        RNAnimated.timing(spotlightOpacity, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }).start(() => setSpotlightVisible(false));
+      } else if (showTabIcon) {
+        spotlightOpacity.setValue(1);
+        setSpotlightVisible(true);
+      }
+    } else {
+      // If not first time, hide spotlight instantly
+      setSpotlightVisible(false);
+      spotlightOpacity.setValue(0);
+    }
+  }, [showTabIcon, hasSeenTabIcon]);
+
   return (
     <>
-      {/* Spotlight overlay for first time only */}
-      {showTabIcon && lastWordLayout && (
+      {/* Spotlight overlay for first time only, covering the whole question */}
+      {spotlightVisible && questionLayout && hasSeenTabIcon === false && (
         (() => {
           const { width: screenW, height: screenH } = Dimensions.get('window');
-          console.log('DEBUG lastWordLayout:', lastWordLayout, 'screen:', screenW, screenH);
+          const cx = questionLayout.x + questionLayout.width / 2;
+          const cy = questionLayout.y + questionLayout.height / 2 - questionLayout.height * 0.3;
+          const maxR = screenW / 2;
+          const rRaw = Math.sqrt((questionLayout.width ** 2 + questionLayout.height ** 2)) / 2 + 24;
+          const r = Math.min(rRaw, maxR);
+
           return (
-            <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, width: screenW, height: screenH, zIndex: 100, backgroundColor: 'transparent' }}>
+            <RNAnimated.View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: screenW,
+                height: screenH,
+                zIndex: 100,
+                backgroundColor: 'transparent',
+                opacity: spotlightOpacity,
+              }}
+            >
               <Svg width={screenW} height={screenH} style={{ position: 'absolute', top: 0, left: 0 }}>
                 <Mask id="mask" maskUnits="userSpaceOnUse" mask-type="luminance">
-                  {/* White = visible (not darkened), black = darkened */}
                   <Rect x="0" y="0" width={screenW} height={screenH} fill="white" />
                   <Circle
-                    cx={lastWordLayout.x + lastWordLayout.width / 2}
-                    cy={lastWordLayout.y + 44 + 16}
-                    r={16}
+                    cx={cx}
+                    cy={cy}
+                    r={r}
                     fill="black"
                   />
                 </Mask>
@@ -195,11 +251,21 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
                   mask="url(#mask)"
                 />
               </Svg>
-            </View>
+            </RNAnimated.View>
           );
         })()
       )}
-      <View style={styles.questionContainer}>
+      <View
+        style={styles.questionContainer}
+        ref={questionRef}
+        onLayout={() => {
+          if (questionRef.current) {
+            questionRef.current.measureInWindow((x, y, width, height) => {
+              setQuestionLayout({ x, y, width, height });
+            });
+          }
+        }}
+      >
         {parts.map((part, idx) => {
           const isWord = /^[a-zA-ZäöüßÄÖÜ]+$/.test(part);
           if (isWord && part !== '___') {
@@ -209,24 +275,45 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
                 ref={el => wordRefs.current[idx] = el}
                 style={styles.wordContainer}
               >
-                {/* Show finger icon absolutely under the last word only the first time ever */}
+                {/* Show spotlight and finger icon absolutely under the last word only the first time ever */}
                 {showTabIcon && idx === lastWordIdx && (
-                  <Animated.View
-                    style={{
-                      position: 'absolute',
-                      top: 44,
-                      left: '50%',
-                      transform: [
-                        { translateX: -16 },
-                        { scale: pulseAnim },
-                      ],
-                      opacity: opacityAnim,
-                      zIndex: 110,
-                    }}
-                    pointerEvents="none"
-                  >
-                    <MaterialIcons name="touch-app" size={32} color="#7c3aed" />
-                  </Animated.View>
+                  <>
+                    {/* Animated purple spotlight circle under the tap icon */}
+                    <Animated.View
+                      style={{
+                        position: 'absolute',
+                        top: 40 + 16 - 32,
+                        left: '50%',
+                        transform: [
+                          { translateX: -32 },
+                          { scale: pulseAnim }, // <-- Add scale animation here
+                        ],
+                        width: 64,
+                        height: 64,
+                        borderRadius: 32,
+                        backgroundColor: 'rgba(124,58,237,0.18)',
+                        zIndex: 109,
+                        opacity: opacityAnim, // <-- Use the same opacity animation as the icon
+                      }}
+                      pointerEvents="none"
+                    />
+                    <Animated.View
+                      style={{
+                        position: 'absolute',
+                        top: 40,
+                        left: '50%',
+                        transform: [
+                          { translateX: -16 },
+                          { scale: pulseAnim },
+                        ],
+                        opacity: opacityAnim,
+                        zIndex: 110,
+                      }}
+                      pointerEvents="none"
+                    >
+                      <MaterialIcons name="touch-app" size={32} color="#7c3aed" />
+                    </Animated.View>
+                  </>
                 )}
                 <TouchableOpacity onPress={() => handleWordPress(part, idx)}>
                   <Text style={[style, styles.tappableWord]}>
@@ -244,7 +331,7 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
           }
         })}
       </View>
-      
+
       {/* Translation dialog positioned absolutely at the root level to avoid container interference */}
       {modalVisible && (
         <Modal
@@ -253,12 +340,12 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
           animationType="none"
           onRequestClose={handleModalClose}
         >
-          <TouchableOpacity 
-            style={styles.modalOverlay} 
-            activeOpacity={1} 
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
             onPress={handleModalClose}
           >
-            <View 
+            <View
               style={{
                 position: 'absolute',
                 top: modalPos.top,
@@ -297,6 +384,10 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     justifyContent: 'center',
     textAlign: 'center',
+    paddingTop: 32, // Fixed top padding for consistent spacing on all devices
+    paddingBottom: 32, // Fixed bottom padding for consistent spacing
+    marginTop: 8, // Fixed margin for consistent spacing
+    marginBottom: 8, // Fixed margin for consistent spacing
   },
   wordContainer: {
     flexDirection: 'row',

@@ -10,7 +10,13 @@
     },
     "production": {
       "releaseChannel": "default",
-      "distribution": "store"
+      "distribution": "store",
+      "cache": {
+        "disabled": true
+      },
+      "env": {
+        "NODE_ENV": "production"
+      }
     }
   },
   "submit": {

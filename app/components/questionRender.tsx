@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { StyleSheet, Text, Pressable, Animated, View } from 'react-native';
+import { StyleSheet, Text, Pressable, Animated, View, TouchableHighlight } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
 import { MaterialIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateItem, updateData, setIsDisabled, selectItem, selectIsItemLoading, selectIsSolved, selectTabName, selectIsDisabled, selectData, selectIsQuestionNotLeft, goToPreviousQuestion, selectHasPreviousQuestion } from '../../features/item/itemSlice';
 import { generateOptions, selectOptions, selectIsOptionsLoading } from '../../features/options/optionsSlice';
 import { selectLanguage } from '../../features/settings/settingsSlice';
@@ -34,10 +33,10 @@ export function QuestionRender() {
 
     const backgroundColorRef = useState(new Animated.Value(0))[0];
     const borderColorRef = useState(new Animated.Value(0))[0];
-    
+
     const dispatch = useAppDispatch();
     const { theme } = useTheme();
-    
+
     // Redux selectors
     const item = useAppSelector(selectItem);
     const isItemLoading = useAppSelector(selectIsItemLoading);
@@ -112,7 +111,7 @@ export function QuestionRender() {
         // Determine the type of answer
         const correctLower = correctAnswer.toLowerCase();
         let articlePool;
-        
+
         if (correctLower === 'welch') {
             articlePool = allArticles.welch;
         } else if (correctLower === 'dies') {
@@ -131,31 +130,31 @@ export function QuestionRender() {
                 articlePool = allArticles.definite;
             }
         }
-        
+
         // Convert all articles to uppercase
         const capitalizedPool = articlePool.map(article => article.toUpperCase());
         const capitalizedCorrect = correctAnswer.toUpperCase();
-        
+
         // Create options array starting with correct answer
         const options = [capitalizedCorrect];
-        
+
         // Add 3 random incorrect options
-        const availableOptions = capitalizedPool.filter(article => 
+        const availableOptions = capitalizedPool.filter(article =>
             article.toLowerCase() !== correctAnswer.toLowerCase()
         );
-        
+
         while (options.length < 4 && availableOptions.length > 0) {
             const randomIndex = Math.floor(Math.random() * availableOptions.length);
             const selectedOption = availableOptions.splice(randomIndex, 1)[0];
             options.push(selectedOption);
         }
-        
+
         // Shuffle the options array
         const shuffledOptions = options
             .map((value) => ({ value, sort: Math.random() }))
             .sort((a, b) => a.sort - b.sort)
             .map(({ value }) => value);
-            
+
         return shuffledOptions;
     };
 
@@ -206,10 +205,10 @@ export function QuestionRender() {
         const isCorrect = normalize(selectedOption) === normalize(item.answer);
         showResult(isCorrect, optionIndex);
         handlePress();
-        
+
         // Update the item data in Redux
         dispatch(updateData(isCorrect));
-        
+
         if (isCorrect) {
             correctSound();
             setTimeout(() => {
@@ -270,8 +269,8 @@ export function QuestionRender() {
                 <View style={styles.container}>
 
                     <View style={styles.questionWrapper}>
-                        <TappableQuestion 
-                            question={item.question} 
+                        <TappableQuestion
+                            question={item.question}
                             targetLanguage={selectedLanguage.key}
                             style={styles.title}
                         />
@@ -280,54 +279,58 @@ export function QuestionRender() {
                     <View style={styles.optionsContainer}>
                         <View style={styles.optionsRow}>
                             {dynamicOptions.slice(0, 2).map((option, i) => (
-                                <Pressable 
-                                    key={i} 
-                                    disabled={isDisabledState} 
-                                    onPress={() => onHandle(option, i)} 
-                                    style={styles.optionWrapper}
+                                <TouchableHighlight
+                                    key={i}
+                                    disabled={isDisabledState}
+                                    onPress={() => onHandle(option, i)}
+                                    style={styles.touchableHighlight}
+                                        underlayColor="transparent" // <-- Add this line to disable highlight color
+
                                 >
                                     <Animated.View
                                         style={[
                                             styles.optionButton,
-                                            (i === 0 && isOption0 !== null) && { 
-                                                backgroundColor: isOption0 ? backgroundColorCorrect : backgroundColorFalse, 
-                                                borderColor: isOption0 ? borderColorTrue : borderColorFalse 
+                                            (i === 0 && isOption0 !== null) && {
+                                                backgroundColor: isOption0 ? backgroundColorCorrect : backgroundColorFalse,
+                                                borderColor: isOption0 ? borderColorTrue : borderColorFalse
                                             },
-                                            (i === 1 && isOption1 !== null) && { 
-                                                backgroundColor: isOption1 ? backgroundColorCorrect : backgroundColorFalse, 
-                                                borderColor: isOption1 ? borderColorTrue : borderColorFalse 
+                                            (i === 1 && isOption1 !== null) && {
+                                                backgroundColor: isOption1 ? backgroundColorCorrect : backgroundColorFalse,
+                                                borderColor: isOption1 ? borderColorTrue : borderColorFalse
                                             },
                                         ]}
                                     >
                                         <Text style={styles.optionText}>{option}</Text>
                                     </Animated.View>
-                                </Pressable>
+                                </TouchableHighlight>
                             ))}
                         </View>
                         <View style={styles.optionsRow}>
                             {dynamicOptions.slice(2, 4).map((option, i) => (
-                                <Pressable 
-                                    key={i + 2} 
-                                    disabled={isDisabledState} 
-                                    onPress={() => onHandle(option, i + 2)} 
-                                    style={styles.optionWrapper}
+                                <TouchableHighlight
+                                    key={i + 2}
+                                    disabled={isDisabledState}
+                                    onPress={() => onHandle(option, i + 2)}
+                                    style={styles.touchableHighlight}
+                                        underlayColor="transparent" // <-- Add this line to disable highlight color
+
                                 >
                                     <Animated.View
                                         style={[
                                             styles.optionButton,
-                                            (i === 0 && isOption2 !== null) && { 
-                                                backgroundColor: isOption2 ? backgroundColorCorrect : backgroundColorFalse, 
-                                                borderColor: isOption2 ? borderColorTrue : borderColorFalse 
+                                            (i === 0 && isOption2 !== null) && {
+                                                backgroundColor: isOption2 ? backgroundColorCorrect : backgroundColorFalse,
+                                                borderColor: isOption2 ? borderColorTrue : borderColorFalse
                                             },
-                                            (i === 1 && isOption3 !== null) && { 
-                                                backgroundColor: isOption3 ? backgroundColorCorrect : backgroundColorFalse, 
-                                                borderColor: isOption3 ? borderColorTrue : borderColorFalse 
+                                            (i === 1 && isOption3 !== null) && {
+                                                backgroundColor: isOption3 ? backgroundColorCorrect : backgroundColorFalse,
+                                                borderColor: isOption3 ? borderColorTrue : borderColorFalse
                                             },
                                         ]}
                                     >
                                         <Text style={styles.optionText}>{option}</Text>
                                     </Animated.View>
-                                </Pressable>
+                                </TouchableHighlight>
                             ))}
                         </View>
                     </View>
@@ -341,8 +344,8 @@ export function QuestionRender() {
                         <Pressable style={styles.nextButton} onPress={nextQuestion}>
                             <MaterialIcons name="navigate-next" size={36} color={theme.primary} />
                         </Pressable>
-                        <Pressable 
-                            style={[styles.backButton, !hasPreviousQuestion && { opacity: 0.3 }]} 
+                        <Pressable
+                            style={[styles.backButton, !hasPreviousQuestion && { opacity: 0.3 }]}
                             onPress={previousQuestion}
                             disabled={!hasPreviousQuestion}
                         >
@@ -369,42 +372,49 @@ function getStyles(theme) {
             alignItems: 'center',
             paddingHorizontal: 10,
             justifyContent: 'center', // center the question vertically in its space
+            
         },
 
         optionsContainer: {
             paddingHorizontal: 20,
             justifyContent: 'center',
             flex: 2, // back to original flex
+            marginBottom: 80,
         },
 
         optionsRow: {
             flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginBottom: 20,
+            justifyContent: 'center'
         },
 
         title: {
             fontSize: 22,
             fontWeight: '600',
             textAlign: 'center',
-            marginTop: 20,  // add some top margin
+            marginTop: 20,
             color: theme.text,
+            
         },
-
-        optionWrapper: {
-            width: '48%',  // slightly less than 50% to allow for spacing
+        touchableHighlight: {
+            alignItems: 'center',
+            // padding: 10,
+            margin: 5,
+            width: '50%',
+            maxWidth: 250,
+            aspectRatio: 1,
+            backfaceVisibility: 'hidden',
+            color: 'transparent'
         },
         optionButton: {
             backgroundColor: theme.secondary,
             borderWidth: 2,
             borderColor: theme.secondary,
-            borderRadius: 12,
-            paddingVertical: 20,
-            paddingHorizontal: 16,
             alignItems: 'center',
             justifyContent: 'center',
-            aspectRatio: 1,  // make it square
-            minHeight: 80,
+            flex: 1,
+            width: '100%',
+            height: '100%',
+            borderRadius: 10,
         },
         optionText: {
             color: theme.optionText,

@@ -70,8 +70,6 @@ export const SimpleTour: React.FC<SimpleTourProps> = ({ visible, onComplete, onS
 
   useEffect(() => {
     if (visible) {
-      console.log('Screen dimensions:', { width, height, statusBar: StatusBar.currentHeight });
-      
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 300,
@@ -103,8 +101,9 @@ export const SimpleTour: React.FC<SimpleTourProps> = ({ visible, onComplete, onS
     // Perform navigation action if specified
     if (currentTourStep.action && onNavigate) {
       const timer = setTimeout(() => {
-        console.log('Navigating to:', currentTourStep.action);
-        onNavigate(currentTourStep.action);
+        if (currentTourStep.action) {
+          onNavigate(currentTourStep.action);
+        }
       }, 500);
 
       return () => clearTimeout(timer);

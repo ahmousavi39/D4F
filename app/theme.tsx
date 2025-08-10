@@ -28,7 +28,8 @@ const LightTheme = {
     akkusativ: '#b948fce0',
     nominativ: '#48e15ee0',
     genitiv: '#007AFF',
-    random:  '#5D6D7E'
+    random:  '#5D6D7E',
+    iconBg: '#888'
 };
 
 const DarkTheme = {
@@ -57,7 +58,8 @@ const DarkTheme = {
     akkusativ: '#b948fce0',
     nominativ: '#48e15ee0',
     genitiv: '#007AFF',
-    random: '#5D6D7E'
+    random: '#5D6D7E',
+    iconBg: '#fff'
 };
 
 

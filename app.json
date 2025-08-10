@@ -3,6 +3,19 @@
     "name": "Die vier Fälle",
     "slug": "die-vier-faelle",
     "version": "1.0.0",
+    "description": "Learn German grammar with the four cases (Nominativ, Akkusativ, Dativ, Genitiv). Interactive exercises and comprehensive explanations for mastering German grammar.",
+    "keywords": [
+      "german",
+      "grammar",
+      "education",
+      "language",
+      "learning",
+      "four cases",
+      "nominativ",
+      "akkusativ",
+      "dativ",
+      "genitiv"
+    ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -12,12 +25,27 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "privacy": "unlisted",
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "ios": {
       "bundleIdentifier": "com.ahmousavi.dievierfaelle",
       "buildNumber": "1",
       "supportsTablet": true,
       "icon": "./assets/icon.png",
-      "backgroundColor": "#FFFFFF"
+      "backgroundColor": "#FFFFFF",
+      "infoPlist": {
+        "CFBundleName": "Die vier Fälle",
+        "CFBundleDisplayName": "Die vier Fälle",
+        "CFBundleVersion": "1.0.0",
+        "CFBundleShortVersionString": "1.0.0",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false
+        },
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.ahmousavi.dievierfaelle",
@@ -27,20 +55,16 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "backgroundColor": "#FFFFFF",
-      "web": {
-        "favicon": "./assets/favicon.png"
-      },
-      "extra": {
-        "eas": {
-          "projectId": "79325ffb-b302-4e89-8b44-aec28c8515f6"
-        }
-      }
+      "backgroundColor": "#FFFFFF"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "79325ffb-b302-4e89-8b44-aec28c8515f6"
+        "projectId": "37e91eb0-c15b-4c79-9130-d600956b9cb5"
       }
-    }
+    },
+    "owner": "mamirhossein"
   }
 }

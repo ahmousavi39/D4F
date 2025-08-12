@@ -99,6 +99,11 @@ export const itemSlice = createSlice({
                 
                 // Add current item to history before changing to new item
                 if (state.item.id !== "" && state.item.id !== "Done!") {
+                    // If we're not at the end of history, truncate it to current position
+                    if (state.currentQuestionIndex < state.questionHistory.length) {
+                        state.questionHistory = state.questionHistory.slice(0, state.currentQuestionIndex);
+                    }
+                    
                     // Remove item if it already exists in history to avoid duplicates
                     state.questionHistory = state.questionHistory.filter(historyItem => historyItem.id !== state.item.id);
                     // Add to end of history
@@ -128,16 +133,18 @@ export const itemSlice = createSlice({
             state.isLoading = false;
         },
         goToPreviousQuestion: (state) => {
-            if (state.questionHistory.length > 0) {
-                // Get the last question from history
-                const previousQuestion = state.questionHistory[state.questionHistory.length - 1];
+            if (state.currentQuestionIndex > 0) {
+                // Add current item to forward history if not already there
+                if (state.currentQuestionIndex === state.questionHistory.length) {
+                    state.questionHistory.push(state.item);
+                }
                 
-                // Remove it from history
-                state.questionHistory = state.questionHistory.slice(0, -1);
+                // Move to previous question
+                state.currentQuestionIndex--;
+                const previousQuestion = state.questionHistory[state.currentQuestionIndex];
                 
                 // Set it as current item
                 state.item = previousQuestion;
-                state.currentQuestionIndex = state.questionHistory.length;
                 
                 // Update dataName based on question ID
                 if (previousQuestion.id[0] == "D") {
@@ -145,6 +152,30 @@ export const itemSlice = createSlice({
                 } else if (previousQuestion.id[0] == "A") {
                     state.dataName = "AKKUSATIV"
                 } else if (previousQuestion.id[0] == "N") {
+                    state.dataName = "NOMINATIV"
+                } else {
+                    state.dataName = "GENITIV"
+                }
+                
+                state.isReseable = false;
+                state.isDisabled = false;
+            }
+        },
+        goToNextQuestion: (state) => {
+            if (state.currentQuestionIndex < state.questionHistory.length - 1) {
+                // Move to next question in history
+                state.currentQuestionIndex++;
+                const nextQuestion = state.questionHistory[state.currentQuestionIndex];
+                
+                // Set it as current item
+                state.item = nextQuestion;
+                
+                // Update dataName based on question ID
+                if (nextQuestion.id[0] == "D") {
+                    state.dataName = "DATIV"
+                } else if (nextQuestion.id[0] == "A") {
+                    state.dataName = "AKKUSATIV"
+                } else if (nextQuestion.id[0] == "N") {
                     state.dataName = "NOMINATIV"
                 } else {
                     state.dataName = "GENITIV"
@@ -212,7 +243,7 @@ export const itemSlice = createSlice({
     },
 });
 
-export const { generateItem, goToPreviousQuestion, updateData, switchTab, setIsDisabled, resetData, setIsQuestionNotLeft } = itemSlice.actions;
+export const { generateItem, goToPreviousQuestion, goToNextQuestion, updateData, switchTab, setIsDisabled, resetData, setIsQuestionNotLeft } = itemSlice.actions;
 
 export const selectItem = (state: RootState) => state.item.item;
 export const selectIsItemLoading = (state: RootState) => state.item.isLoading;
@@ -223,6 +254,7 @@ export const selectIsResetable = (state: RootState) => state.item.isReseable;
 export const selectIsDisabled = (state: RootState) => state.item.isDisabled;
 export const selectData = (state: RootState) => state.item.data;
 export const selectIsQuestionNotLeft = (state: RootState) => state.item.isQuestionNotLeft;
-export const selectHasPreviousQuestion = (state: RootState) => state.item.questionHistory.length > 0;
+export const selectHasPreviousQuestion = (state: RootState) => state.item.currentQuestionIndex > 0;
+export const selectHasNextQuestion = (state: RootState) => state.item.currentQuestionIndex < state.item.questionHistory.length - 1;
 
 export default itemSlice.reducer;

@@ -155,7 +155,7 @@ export function Home() {
         <SafeAreaView style={modalVisibleRepeat || modalVisibleRetry ? styles.containerDisabled : styles.container}>
 
           <Modal
-            animationType="slide"
+            animationType="fade"
             transparent={true}
             visible={modalVisible}
             onRequestClose={() => {
@@ -245,7 +245,7 @@ export function Home() {
 
           {/* Modals */}
           <Modal
-            animationType="slide"
+            animationType="fade"
             transparent={true}
             visible={modalVisibleRepeat}
             onRequestClose={() => {
@@ -267,7 +267,7 @@ export function Home() {
           </Modal>
 
           <Modal
-            animationType="slide"
+            animationType="fade"
             transparent={true}
             visible={modalVisibleRetry}
             onRequestClose={() => {
@@ -388,7 +388,7 @@ function getStyles(theme) {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
     },
     modalView: {
       margin: 15,

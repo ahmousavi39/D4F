@@ -135,7 +135,7 @@ export function Settings() {
           </TouchableOpacity>
 
           <Modal
-            animationType="slide"
+            animationType="fade"
             transparent={true}
             visible={modalVisible}
             onRequestClose={() => {
@@ -209,6 +209,7 @@ function getStyles(theme) {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
     },
     modalView: {
       margin: 15,

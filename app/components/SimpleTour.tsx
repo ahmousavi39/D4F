@@ -91,6 +91,13 @@ export const SimpleTour: React.FC<SimpleTourProps> = ({ visible, onComplete, onS
           }),
         ])
       ).start();
+    } else {
+      // Fade out when hidden
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
     }
   }, [visible, fadeAnim, spotlightAnim]);
 
@@ -134,13 +141,27 @@ export const SimpleTour: React.FC<SimpleTourProps> = ({ visible, onComplete, onS
   };
 
   const handleComplete = async () => {
-    await putItem('tour_completed', 'true');
-    onComplete();
+    // Fade out before completing
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(async () => {
+      await putItem('tour_completed', 'true');
+      onComplete();
+    });
   };
 
   const handleSkip = async () => {
-    await putItem('tour_completed', 'true');
-    onSkip();
+    // Fade out before skipping
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(async () => {
+      await putItem('tour_completed', 'true');
+      onSkip();
+    });
   };
 
   const progress = ((currentStep + 1) / tourSteps.length) * 100;

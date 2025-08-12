@@ -3,7 +3,7 @@ import { StyleSheet, Text, Pressable, Animated, View, TouchableHighlight } from 
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
 import { MaterialIcons } from '@expo/vector-icons';
-import { generateItem, updateData, setIsDisabled, selectItem, selectIsItemLoading, selectIsSolved, selectTabName, selectIsDisabled, selectData, selectIsQuestionNotLeft, goToPreviousQuestion, selectHasPreviousQuestion } from '../../features/item/itemSlice';
+import { generateItem, updateData, setIsDisabled, selectItem, selectIsItemLoading, selectIsSolved, selectTabName, selectIsDisabled, selectData, selectIsQuestionNotLeft, goToPreviousQuestion, goToNextQuestion, selectHasPreviousQuestion, selectHasNextQuestion } from '../../features/item/itemSlice';
 import { generateOptions, selectOptions, selectIsOptionsLoading } from '../../features/options/optionsSlice';
 import { selectLanguage } from '../../features/settings/settingsSlice';
 import { useAppDispatch, useAppSelector } from '../hook';
@@ -48,6 +48,7 @@ export function QuestionRender() {
     const isOptionsLoading = useAppSelector(selectIsOptionsLoading);
     const selectedLanguage = useAppSelector(selectLanguage);
     const hasPreviousQuestion = useAppSelector(selectHasPreviousQuestion);
+    const hasNextQuestion = useAppSelector(selectHasNextQuestion);
 
     const styles = useMemo(() => getStyles(theme), [theme]);
 
@@ -226,7 +227,13 @@ export function QuestionRender() {
     };
 
     const nextQuestion = () => {
-        dispatch(generateItem());
+        if (hasNextQuestion) {
+            // Navigate to next question in history
+            dispatch(goToNextQuestion());
+        } else {
+            // Generate new question
+            dispatch(generateItem());
+        }
     };
 
     const previousQuestion = () => {

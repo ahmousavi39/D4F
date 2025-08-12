@@ -21,7 +21,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -65,6 +65,9 @@
         "projectId": "37e91eb0-c15b-4c79-9130-d600956b9cb5"
       }
     },
-    "owner": "mamirhossein"
+    "owner": "mamirhossein",
+    "plugins": [
+      "expo-audio"
+    ]
   }
 }

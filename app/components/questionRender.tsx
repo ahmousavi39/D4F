@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { StyleSheet, Text, Pressable, Animated, View, TouchableHighlight } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { Audio } from 'expo-av';
+import { useAudioPlayer } from 'expo-audio';
 import { MaterialIcons } from '@expo/vector-icons';
 import { generateItem, updateData, setIsDisabled, selectItem, selectIsItemLoading, selectIsSolved, selectTabName, selectIsDisabled, selectData, selectIsQuestionNotLeft, goToPreviousQuestion, goToNextQuestion, selectHasPreviousQuestion, selectHasNextQuestion } from '../../features/item/itemSlice';
 import { generateOptions, selectOptions, selectIsOptionsLoading } from '../../features/options/optionsSlice';
@@ -11,15 +11,8 @@ import { TappableQuestion } from './TappableQuestion';
 // ...existing code...
 import { useTheme } from '../theme';
 
-async function correctSound() {
-    const { sound } = await Audio.Sound.createAsync(require('../../assets/correct.mp3'));
-    await sound.playAsync();
-}
-
-async function wrongSound() {
-    const { sound } = await Audio.Sound.createAsync(require('../../assets/wrong.mp3'));
-    await sound.playAsync();
-}
+const correctSoundSource = require('../../assets/correct.mp3');
+const wrongSoundSource = require('../../assets/wrong.mp3');
 
 export function QuestionRender() {
     const [isOption0, setIsOption0] = useState(null);
@@ -49,6 +42,9 @@ export function QuestionRender() {
     const selectedLanguage = useAppSelector(selectLanguage);
     const hasPreviousQuestion = useAppSelector(selectHasPreviousQuestion);
     const hasNextQuestion = useAppSelector(selectHasNextQuestion);
+
+    const correctPlayer = useAudioPlayer(correctSoundSource);
+    const wrongPlayer = useAudioPlayer(wrongSoundSource);
 
     const styles = useMemo(() => getStyles(theme), [theme]);
 
@@ -211,13 +207,15 @@ export function QuestionRender() {
         dispatch(updateData(isCorrect));
 
         if (isCorrect) {
-            correctSound();
+            correctPlayer.seekTo(0);
+            correctPlayer.play();
             setTimeout(() => {
                 dispatch(generateItem());
                 handleRelease();
             }, 2000);
         } else {
-            wrongSound();
+            wrongPlayer.seekTo(0);
+            wrongPlayer.play();
         }
     };
 
@@ -227,6 +225,13 @@ export function QuestionRender() {
     };
 
     const nextQuestion = () => {
+        // Reset the UI state when navigating to next question
+        resetResult();
+        setIsOption0(null);
+        setIsOption1(null);
+        setIsOption2(null);
+        setIsOption3(null);
+        
         if (hasNextQuestion) {
             // Navigate to next question in history
             dispatch(goToNextQuestion());
@@ -237,6 +242,13 @@ export function QuestionRender() {
     };
 
     const previousQuestion = () => {
+        // Reset the UI state when navigating to previous question
+        resetResult();
+        setIsOption0(null);
+        setIsOption1(null);
+        setIsOption2(null);
+        setIsOption3(null);
+        
         dispatch(goToPreviousQuestion());
     };
 

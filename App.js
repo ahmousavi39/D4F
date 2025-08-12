@@ -2,28 +2,15 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Provider } from 'react-redux';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Akkusativ,Home, Dativ, Genitiv, Nominativ, Random, Repeat, Retry, RightHeaderHome, RightHeader, Info, Settings, LeftHeader, AppInitializer } from './app/components';
 import { store } from './app/store';
 import { ThemeProvider, useTheme } from './app/theme';
 
 const Stack = createNativeStackNavigator();
 
-function LoadingScreen({ theme }) {
-  return (
-    <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
-      <ActivityIndicator size="large" color={theme.primary} />
-    </View>
-  );
-}
-
 function ThemedApp() {
-  const { theme, isLoading } = useTheme();
+  const { theme } = useTheme();
   const navigationRef = React.useRef();
-
-  if (isLoading) {
-    return <LoadingScreen theme={theme} />;
-  }
 
   return (
     <AppInitializer>
@@ -132,14 +119,6 @@ function ThemedApp() {
     </AppInitializer>
   );
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
 
 export default function App() {
   return (

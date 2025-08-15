@@ -20,7 +20,7 @@ export const optionsSlice = createSlice({
     reducers: {
         generateOptions: (state, action: PayloadAction<string>) => {
             state.isLoading = true;
-            const answer = action.payload;
+            const gap = action.payload;
             const randLosungIndex = Math.round(0 + Math.random() * ((3 - 1) - 0));
             state.options = [];
 
@@ -42,7 +42,7 @@ export const optionsSlice = createSlice({
                     while (!isUnique);
                     state.options.push(state.possibleAnswers[losungenIndex].toUpperCase())
                 }else {
-                    state.options.push(answer);
+                    state.options.push(gap);
                 }
             }
             state.isLoading = false;

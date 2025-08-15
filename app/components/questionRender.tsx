@@ -164,8 +164,8 @@ export function QuestionRender() {
 
     // Generate dynamic options when item changes
     useEffect(() => {
-        if (item && item.answer && item.question !== "Done!") {
-            const newOptions = generateDynamicOptions(item.answer, tabName);
+        if (item && item.gap && item.sentence !== "Done!") {
+            const newOptions = generateDynamicOptions(item.gap, tabName);
             setDynamicOptions(newOptions);
         }
     }, [item, tabName]);
@@ -199,7 +199,7 @@ export function QuestionRender() {
     const normalize = (str) => (str || '').toString().trim().toLowerCase();
 
     const onHandle = (selectedOption, optionIndex) => {
-        const isCorrect = normalize(selectedOption) === normalize(item.answer);
+        const isCorrect = normalize(selectedOption) === normalize(item.gap);
         showResult(isCorrect, optionIndex);
         handlePress();
 
@@ -289,7 +289,7 @@ export function QuestionRender() {
 
                     <View style={styles.questionWrapper}>
                         <TappableQuestion
-                            question={item.question}
+                            question={item.sentence}
                             targetLanguage={selectedLanguage.key}
                             style={styles.title}
                         />

@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { getAllKeys, getItem, putItem, removeItem } from '../../app/services/AsyncStorage';
+import { getAllKeys, getItem, putItem, removeItem, clear } from '../../app/services/AsyncStorage';
 import * as backupData from '../../data.json';
 import type { RootState } from '../../app/store'
 import {
@@ -7,14 +7,14 @@ import {
 } from '@react-navigation/native';
 
 interface itemObjectState {
-    id: string; question: string; answer: string; isTried: boolean; isFalse: boolean;
+    id: string; sentence: string; gap: string; isTried: boolean; isFalse: boolean;
 }
 
 type tabNameState = "DATIV" | "AKKUSATIV" | "NOMINATIV" | "GENITIV" | "RANDOM" | "REPEAT" | "RETRY";
 
 interface itemState {
-    item: { id: string; question: string; answer: string; isTried: boolean; isFalse: boolean; },
-    data: { "nominativ": itemObjectState[]; "genitiv": itemObjectState[]; "dativ": itemObjectState[]; "akkusativ": itemObjectState[]; },
+    item: { id: string; sentence: string; gap: string; isTried: boolean; isFalse: boolean; },
+    data: { "nominativ": itemObjectState[]; "genetiv": itemObjectState[]; "dativ": itemObjectState[]; "akkusativ": itemObjectState[]; },
     // partData: itemObjectState[],
     randitemIndex: number,
     isLoading: boolean,
@@ -29,7 +29,7 @@ interface itemState {
 }
 
 const initialState: itemState = {
-    item: { id: "", question: "", answer: "", isFalse: true, isTried: true },
+    item: { id: "", sentence: "", gap: "", isFalse: true, isTried: true },
     data: backupData,
     // partData: backupData["dativ"],
     randitemIndex: 0,
@@ -47,7 +47,44 @@ const initialState: itemState = {
 export const loadData = createAsyncThunk('data/loadData', async () => {
     if ((await getAllKeys()).includes("data")) {
         const data = await getItem('data');
-        return data;
+        
+        // Migrate old data format to new format if needed
+        const migrateData = (dataObj) => {
+            if (!dataObj || typeof dataObj !== 'object') return backupData;
+            
+            const migratedData = { ...dataObj };
+            
+            // Check each category for old format and migrate
+            ['nominativ', 'akkusativ', 'dativ', 'genetiv'].forEach(category => {
+                if (Array.isArray(migratedData[category])) {
+                    migratedData[category] = migratedData[category].map(item => {
+                        if (item && typeof item === 'object') {
+                            // If item has old field names, migrate them
+                            if (item.question && !item.sentence) {
+                                return {
+                                    ...item,
+                                    sentence: item.question,
+                                    gap: item.answer || item.gap,
+                                    // Remove old fields
+                                    question: undefined,
+                                    answer: undefined
+                                };
+                            }
+                        }
+                        return item;
+                    });
+                }
+            });
+            
+            return migratedData;
+        };
+        
+        const migratedData = migrateData(data);
+        
+        // Save the migrated data back to AsyncStorage
+        await putItem("data", migratedData);
+        
+        return migratedData;
     } else {
         await putItem("data", backupData);
         return backupData;
@@ -64,70 +101,112 @@ export const itemSlice = createSlice({
             state.isDisabled = false;
             let partData;
 
+            // Ensure data arrays exist and are arrays
+            if (!state.data || typeof state.data !== 'object') {
+                console.error('Data not loaded properly');
+                state.item = { id: "Error", sentence: "Data not loaded", gap: "Error", isFalse: true, isTried: true };
+                state.isLoading = false;
+                return;
+            }
+
+            const safeFilterArray = (array) => {
+                if (!Array.isArray(array)) return [];
+                return array.filter((item) => item && typeof item === 'object' && item.id && item.sentence && item.gap);
+            };
+
             switch (state.tabName) {
                 case "DATIV":
-                    partData = state.data.dativ.filter((item) => (item.isTried && item.isFalse || !item.isTried));
+                    partData = safeFilterArray(state.data.dativ).filter((item) => item && (item.isTried && item.isFalse || !item.isTried));
                     break;
                 case "AKKUSATIV":
-                    partData = state.data.akkusativ.filter((item) => (item.isTried && item.isFalse || !item.isTried));
+                    partData = safeFilterArray(state.data.akkusativ).filter((item) => item && (item.isTried && item.isFalse || !item.isTried));
                     break;
                 case "NOMINATIV":
-                    partData = state.data.nominativ.filter((item) => (item.isTried && item.isFalse || !item.isTried));
+                    partData = safeFilterArray(state.data.nominativ).filter((item) => item && (item.isTried && item.isFalse || !item.isTried));
                     break;
                 case "GENITIV":
-                    partData = state.data.genitiv.filter((item) => (item.isTried && item.isFalse || !item.isTried));
+                    partData = safeFilterArray(state.data.genetiv).filter((item) => item && (item.isTried && item.isFalse || !item.isTried));
                     break;
                 case "RANDOM":
-                    partData = [].concat(state.data.dativ, state.data.akkusativ, state.data.nominativ, state.data.genitiv).filter((item) => (item.isTried && item.isFalse || !item.isTried));
+                    const allData = [].concat(
+                        safeFilterArray(state.data.dativ), 
+                        safeFilterArray(state.data.akkusativ), 
+                        safeFilterArray(state.data.nominativ), 
+                        safeFilterArray(state.data.genetiv)
+                    );
+                    partData = allData.filter((item) => item && (item.isTried && item.isFalse || !item.isTried));
                     break;
                 case "REPEAT":
-                    partData = [].concat(state.data.dativ, state.data.akkusativ, state.data.nominativ, state.data.genitiv).filter((item) => (item.isTried));
+                    const allDataRepeat = [].concat(
+                        safeFilterArray(state.data.dativ), 
+                        safeFilterArray(state.data.akkusativ), 
+                        safeFilterArray(state.data.nominativ), 
+                        safeFilterArray(state.data.genetiv)
+                    );
+                    partData = allDataRepeat.filter((item) => item && item.isTried);
                     break;
                 case "RETRY":
-                    partData = [].concat(state.data.dativ, state.data.akkusativ, state.data.nominativ, state.data.genitiv).filter((item) => (item.isFalse));
+                    const allDataRetry = [].concat(
+                        safeFilterArray(state.data.dativ), 
+                        safeFilterArray(state.data.akkusativ), 
+                        safeFilterArray(state.data.nominativ), 
+                        safeFilterArray(state.data.genetiv)
+                    );
+                    partData = allDataRetry.filter((item) => item && item.isFalse);
                     break;
                 default:
+                    partData = [];
                     break;
             }
 
-            do {
-                state.randitemIndex = Math.round(0 + Math.random() * ((partData.length - 1) - 0));
-            } while (partData.length != 1 && partData[state.randitemIndex]?.id == state.item?.id && state.item != undefined);
-
             if (partData.length > 0) {
-                const newItem = { ...partData[state.randitemIndex], answer: partData[state.randitemIndex].answer.toUpperCase() };
-                
-                // Add current item to history before changing to new item
-                if (state.item.id !== "" && state.item.id !== "Done!") {
-                    // If we're not at the end of history, truncate it to current position
-                    if (state.currentQuestionIndex < state.questionHistory.length) {
-                        state.questionHistory = state.questionHistory.slice(0, state.currentQuestionIndex);
+                do {
+                    state.randitemIndex = Math.round(0 + Math.random() * ((partData.length - 1) - 0));
+                } while (partData.length != 1 && partData[state.randitemIndex]?.id == state.item?.id && state.item != undefined);
+            } else {
+                state.randitemIndex = 0;
+            }
+
+            if (partData.length > 0 && state.randitemIndex < partData.length) {
+                const selectedItem = partData[state.randitemIndex];
+                if (selectedItem) {
+                    const newItem = { ...selectedItem, gap: selectedItem.gap.toUpperCase() };
+                    
+                    // Add current item to history before changing to new item
+                    if (state.item.id !== "" && state.item.id !== "Done!") {
+                        // If we're not at the end of history, truncate it to current position
+                        if (state.currentQuestionIndex < state.questionHistory.length) {
+                            state.questionHistory = state.questionHistory.slice(0, state.currentQuestionIndex);
+                        }
+                        
+                        // Remove item if it already exists in history to avoid duplicates
+                        state.questionHistory = state.questionHistory.filter(historyItem => historyItem.id !== state.item.id);
+                        // Add to end of history
+                        state.questionHistory.push(state.item);
+                        // Keep only last 10 questions in history
+                        if (state.questionHistory.length > 10) {
+                            state.questionHistory = state.questionHistory.slice(-10);
+                        }
                     }
                     
-                    // Remove item if it already exists in history to avoid duplicates
-                    state.questionHistory = state.questionHistory.filter(historyItem => historyItem.id !== state.item.id);
-                    // Add to end of history
-                    state.questionHistory.push(state.item);
-                    // Keep only last 10 questions in history
-                    if (state.questionHistory.length > 10) {
-                        state.questionHistory = state.questionHistory.slice(-10);
-                    }
-                }
-                
-                state.item = newItem;
-                state.currentQuestionIndex = state.questionHistory.length;
+                    state.item = newItem;
+                    state.currentQuestionIndex = state.questionHistory.length;
 
-                if (partData[state.randitemIndex].id[0] == "D") {
-                    state.dataName = "DATIV"
-                } else if (partData[state.randitemIndex].id[0] == "A") {
-                    state.dataName = "AKKUSATIV"
-                } else if (partData[state.randitemIndex].id[0] == "N") {
-                    state.dataName = "NOMINATIV"
+                    if (selectedItem.id[0] == "D") {
+                        state.dataName = "DATIV"
+                    } else if (selectedItem.id[0] == "A") {
+                        state.dataName = "AKKUSATIV"
+                    } else if (selectedItem.id[0] == "N") {
+                        state.dataName = "NOMINATIV"
+                    } else {
+                        state.dataName = "GENITIV"
+                    }
                 } else {
-                    state.dataName = "GENITIV"
+                    state.item = { id: "Done!", sentence: "Done!", gap: "~_~", isFalse: true, isTried: true };
+                    state.isQuestionNotLeft = true;
                 }
             } else {
-                state.item = { id: "Done!", question: "Done!", answer: "~_~", isFalse: true, isTried: true };
+                state.item = { id: "Done!", sentence: "Done!", gap: "~_~", isFalse: true, isTried: true };
                 state.isQuestionNotLeft = true;
             }
             state.isLoading = false;
@@ -201,20 +280,28 @@ export const itemSlice = createSlice({
 
             if (state.dataName == "DATIV") {
                 itemIndex = state.data.dativ.findIndex(item => item.id == state.item.id);
-                state.data.dativ[itemIndex].isTried = true;
-                state.isSolved ? state.data.dativ[itemIndex].isFalse = false : state.data.dativ[itemIndex].isFalse = true;
+                if (itemIndex !== -1) {
+                    state.data.dativ[itemIndex].isTried = true;
+                    state.isSolved ? state.data.dativ[itemIndex].isFalse = false : state.data.dativ[itemIndex].isFalse = true;
+                }
             } else if (state.dataName == "AKKUSATIV") {
                 itemIndex = state.data.akkusativ.findIndex(item => item.id == state.item.id);
-                state.data.akkusativ[itemIndex].isTried = true;
-                state.isSolved ? state.data.akkusativ[itemIndex].isFalse = false : state.data.akkusativ[itemIndex].isFalse = true;
+                if (itemIndex !== -1) {
+                    state.data.akkusativ[itemIndex].isTried = true;
+                    state.isSolved ? state.data.akkusativ[itemIndex].isFalse = false : state.data.akkusativ[itemIndex].isFalse = true;
+                }
             } else if (state.dataName == "NOMINATIV") {
                 itemIndex = state.data.nominativ.findIndex(item => item.id == state.item.id);
-                state.data.nominativ[itemIndex].isTried = true;
-                state.isSolved ? state.data.nominativ[itemIndex].isFalse = false : state.data.nominativ[itemIndex].isFalse = true;
+                if (itemIndex !== -1) {
+                    state.data.nominativ[itemIndex].isTried = true;
+                    state.isSolved ? state.data.nominativ[itemIndex].isFalse = false : state.data.nominativ[itemIndex].isFalse = true;
+                }
             } else if (state.dataName == "GENITIV") {
-                itemIndex = state.data.genitiv.findIndex(item => item.id == state.item.id);
-                state.data.genitiv[itemIndex].isTried = true;
-                state.isSolved ? state.data.genitiv[itemIndex].isFalse = false : state.data.genitiv[itemIndex].isFalse = true;
+                itemIndex = state.data.genetiv.findIndex(item => item.id == state.item.id);
+                if (itemIndex !== -1) {
+                    state.data.genetiv[itemIndex].isTried = true;
+                    state.isSolved ? state.data.genetiv[itemIndex].isFalse = false : state.data.genetiv[itemIndex].isFalse = true;
+                }
             }
 
             const pushData = async () => {
@@ -230,6 +317,8 @@ export const itemSlice = createSlice({
             state.data = backupData;
             const removeData = async () => {
                 await removeItem('data');
+                // Clear all AsyncStorage to ensure clean state
+                await clear();
                 await putItem('data', backupData);
             }
 
@@ -238,7 +327,41 @@ export const itemSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder.addCase(loadData.fulfilled, (state, action) => {
-            state.data = action.payload;
+            const data = action.payload;
+            
+            // Additional validation to ensure all items have the correct structure
+            const validateItem = (item) => {
+                return item && 
+                       typeof item === 'object' && 
+                       typeof item.id === 'string' && 
+                       typeof item.sentence === 'string' && 
+                       typeof item.gap === 'string' && 
+                       typeof item.isTried === 'boolean' && 
+                       typeof item.isFalse === 'boolean';
+            };
+            
+            // Validate that the loaded data has the expected structure
+            if (data && typeof data === 'object' && 
+                Array.isArray(data.nominativ) && 
+                Array.isArray(data.akkusativ) && 
+                Array.isArray(data.dativ) && 
+                Array.isArray(data.genetiv)) {
+                
+                // Double-check that all items in arrays have correct structure
+                const allValid = ['nominativ', 'akkusativ', 'dativ', 'genetiv'].every(category =>
+                    data[category].every(validateItem)
+                );
+                
+                if (allValid) {
+                    state.data = data;
+                } else {
+                    console.error('Some items have invalid structure, using backup data');
+                    state.data = backupData;
+                }
+            } else {
+                console.error('Invalid data structure loaded, using backup data');
+                state.data = backupData;
+            }
         });
     },
 });

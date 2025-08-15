@@ -32,18 +32,11 @@
     ],
     "ios": {
       "bundleIdentifier": "com.ahmousavi.dievierfaelle",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "supportsTablet": true,
       "icon": "./assets/icon.png",
       "backgroundColor": "#FFFFFF",
       "infoPlist": {
-        "CFBundleName": "Die vier Fälle",
-        "CFBundleDisplayName": "Die vier Fälle",
-        "CFBundleVersion": "1.0.0",
-        "CFBundleShortVersionString": "1.0.0",
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": false
-        },
         "ITSAppUsesNonExemptEncryption": false
       }
     },

@@ -382,22 +382,22 @@ function getStyles(theme) {
     return StyleSheet.create({
         container: {
             flex: 1,
-            justifyContent: 'space-evenly', // distribute space evenly between question, options, and footer
+            justifyContent: 'space-evenly', // back to space-evenly but with adjustments
         },
 
         questionWrapper: {
-            marginBottom: 100, // add bottom margin for bigger gap
-            flex: 1, // back to original flex
+            marginBottom: 60, // moderate bottom margin
+            flex: 1.5, // slight increase in flex for more question space
             alignItems: 'center',
             paddingHorizontal: 10,
             justifyContent: 'center', // center the question vertically in its space
-            
+            paddingTop: 10, // small top padding for breathing room
         },
 
         optionsContainer: {
             paddingHorizontal: 20,
             justifyContent: 'center',
-            flex: 2, // back to original flex
+            flex: 2, // keep flex for options
             marginBottom: 80,
         },
 

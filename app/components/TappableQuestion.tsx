@@ -24,6 +24,8 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
   const [translation, setTranslation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [modalPos, setModalPos] = useState<{ left: number, top: number, triangleLeft: number }>({ left: 0, top: 0, triangleLeft: 0 });
+  const [isClosing, setIsClosing] = useState(false);
+  const currentWordRef = useRef<string | null>(null); // Track the current word being processed
   const [showTabIcon, setShowTabIcon] = useState(false);
   const [spotlightVisible, setSpotlightVisible] = useState(true);
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -102,9 +104,9 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
       top = wordY - modalHeight - 10;
     }
 
-    // If still too high, clamp to safe area
+    // If still too high, position it just a bit higher than original safe area
     if (top < 100) { // Leave room at top for status bar and navigation
-      top = 100;
+      top = Math.max(80, wordY - modalHeight - 30); // Just slightly higher, not too much
     }
 
     // Calculate triangle position relative to modal left edge
@@ -119,42 +121,77 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
 
   // Split the question into words while preserving spaces and punctuation
   const parts = question.split(/(\s+|[.,!?;:()]+)/);
+  const requestIdRef = useRef(0);
 
   const handleWordPress = async (word: string, idx: number) => {
+    console.log("handleWordPress");
+
     if (targetLanguage === 'de') return;
-    // Hide tab icon forever after first tap
+
+    // Increment request ID so old requests are ignored
+    const reqId = ++requestIdRef.current;
+
     if (showTabIcon) {
       setShowTabIcon(false);
       await putItem('hasSeenTabIcon', true);
     }
+
+    currentWordRef.current = word;
+    setIsClosing(false);
     setSelectedWord(word);
     setIsLoading(true);
-    // Get the word element and measure its position
+
+    // Measure position
     const wordElement = wordRefs.current[idx];
     if (wordElement) {
-      wordElement.measureInWindow((x: number, y: number, width: number, height: number) => {
+      wordElement.measureInWindow((x, y, width, height) => {
+        // Ignore if this is not the latest request
+        if (reqId !== requestIdRef.current || isClosing) return;
         const position = calculateModalPosition(x, y, width, height);
         setModalPos(position);
         setModalVisible(true);
       });
     } else {
-      setModalPos({ left: 100, top: 200, triangleLeft: 100 });
-      setModalVisible(true);
+      if (reqId === requestIdRef.current && !isClosing) {
+        setModalPos({ left: 100, top: 200, triangleLeft: 100 });
+        setModalVisible(true);
+      }
     }
+
+    // Translation
     try {
       const translated = await TranslationService.translateWord(word, targetLanguage);
-      setTranslation(translated);
+      if (reqId === requestIdRef.current && !isClosing) {
+        setTranslation(translated);
+      }
     } catch {
-      setTranslation('Translation failed');
+      if (reqId === requestIdRef.current && !isClosing) {
+        setTranslation('Translation failed');
+      }
     } finally {
-      setIsLoading(false);
+      if (reqId === requestIdRef.current && !isClosing) {
+        setIsLoading(false);
+      }
     }
   };
 
   const handleModalClose = () => {
+    console.log("handleModalClose");
+    setIsClosing(true);
+    currentWordRef.current = null;
+
+    // Invalidate any pending callbacks from older taps
+    requestIdRef.current++;
+
     setModalVisible(false);
     setSelectedWord('');
     setTranslation('');
+    setIsLoading(false);
+    setModalPos({ left: 0, top: 0, triangleLeft: 0 });
+
+    setTimeout(() => {
+      setIsClosing(false);
+    }, 300);
   };
 
   // Find the last word index
@@ -272,7 +309,7 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
             return (
               <View
                 key={idx}
-                ref={el => wordRefs.current[idx] = el}
+                ref={el => { wordRefs.current[idx] = el; }}
                 style={styles.wordContainer}
               >
                 {/* Show spotlight and finger icon absolutely under the last word only the first time ever */}
@@ -315,7 +352,11 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
                     </Animated.View>
                   </>
                 )}
-                <TouchableOpacity onPress={() => handleWordPress(part, idx)}>
+                <TouchableOpacity
+                  onPress={() => handleWordPress(part, idx)}
+                  style={styles.touchableWordContainer}
+                  activeOpacity={0.7}
+                >
                   <Text style={[style, styles.tappableWord]}>
                     {part}
                   </Text>
@@ -333,7 +374,6 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
       </View>
 
       {/* Translation dialog positioned absolutely at the root level to avoid container interference */}
-      {modalVisible && (
         <Modal
           transparent={true}
           visible={modalVisible}
@@ -348,7 +388,7 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
             <View
               style={{
                 position: 'absolute',
-                top: modalPos.top,
+                top: modalPos.top - 23, // Move modal 40px higher
                 left: modalPos.left,
                 width: modalWidth,
                 backgroundColor: 'white',
@@ -372,7 +412,6 @@ export const TappableQuestion: React.FC<TappableQuestionProps> = ({
             </View>
           </TouchableOpacity>
         </Modal>
-      )}
     </>
   );
 };
@@ -391,6 +430,16 @@ const styles = StyleSheet.create({
   },
   wordContainer: {
     flexDirection: 'row',
+  },
+  touchableWordContainer: {
+    paddingTop: 0,
+    paddingBottom: 28,
+    paddingHorizontal: 8,
+    minHeight: 48, // Larger touch target for better accessibility
+    minWidth: 32, // Ensure minimum width for single letters
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 6, // Subtle border radius for visual feedback
   },
   tappableWord: {
     // Remove underline styling for cleaner appearance
